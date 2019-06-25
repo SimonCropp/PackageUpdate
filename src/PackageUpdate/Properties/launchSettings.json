@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PackageUpdate": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Code"
+    }
+  }
+}

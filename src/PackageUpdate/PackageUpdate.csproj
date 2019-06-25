@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <ToolCommandName>mdsnippets</ToolCommandName>
+    <AssemblyName>mdsnippets</AssemblyName>
+    <PackageId>MarkdownSnippets.Tool</PackageId>
+    <PackAsTool>True</PackAsTool>
+    <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
+    <Description>.NET Core Global Tool for merging code snippets with markdown documents</Description>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.5.0" />
+  </ItemGroup>
+</Project>
