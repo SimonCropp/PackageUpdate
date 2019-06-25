@@ -6,11 +6,8 @@ static class PendingUpdateReader
 {
     public static List<PendingUpdate> ReadPendingUpdates(string directory)
     {
-        using (var process = DotnetStarter.StartDotNet("list package --outdated", directory))
-        {
-            var readLines = process.ReadLines();
-            return ParseUpdates(readLines).ToList();
-        }
+        var lines = DotnetStarter.StartDotNet("list package --outdated", directory);
+        return ParseUpdates(lines).ToList();
     }
 
     public static IEnumerable<PendingUpdate> ParseUpdates(IEnumerable<string> lines)
@@ -25,7 +22,11 @@ static class PendingUpdateReader
             var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var package = split[1];
             var version = split[4];
-            yield return new PendingUpdate{Package = package,Version = version};
+            yield return new PendingUpdate
+            {
+                Package = package,
+                Version = version
+            };
         }
     }
 }

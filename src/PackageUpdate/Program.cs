@@ -19,31 +19,42 @@ class Program
 
         foreach (var solution in Directory.EnumerateFiles(targetDirectory, "*.sln", SearchOption.AllDirectories))
         {
-            var solutionDir = Directory.GetParent(solution).FullName;
-            Console.WriteLine($"  {solutionDir}");
-            using (DotnetStarter.StartDotNet("restore", solutionDir))
+            var solutionDirectory = Directory.GetParent(solution).FullName;
+            try
             {
+                ProcessSolution(solutionDirectory);
             }
-
-            foreach (var project in Directory.EnumerateFiles(targetDirectory, "*.csproj", SearchOption.AllDirectories))
+            catch (Exception e)
             {
-                var directory = Directory.GetParent(project).FullName;
-                Console.WriteLine($"    {directory}");
-                foreach (var pendingUpdate in PendingUpdateReader.ReadPendingUpdates(directory))
-                {
-                    Console.WriteLine($"      {pendingUpdate.Package} : {pendingUpdate.Version}");
-                    Update(project, pendingUpdate.Package, pendingUpdate.Version);
-                }
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine($@"Failed to process solution: {solutionDirectory}.
+Error: {e.Message}");
+                Console.ResetColor();
+            }
+        }
+    }
+
+    static void ProcessSolution(string solutionDirectory)
+    {
+        Console.WriteLine($"  {solutionDirectory}");
+        DotnetStarter.StartDotNet("restore", solutionDirectory);
+
+        foreach (var project in Directory.EnumerateFiles(solutionDirectory, "*.csproj", SearchOption.AllDirectories))
+        {
+            var directory = Directory.GetParent(project).FullName;
+            Console.WriteLine($"    {directory.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
+            foreach (var pendingUpdate in PendingUpdateReader.ReadPendingUpdates(directory))
+            {
+                Console.WriteLine($"      {pendingUpdate.Package} : {pendingUpdate.Version}");
+                Update(project, pendingUpdate.Package, pendingUpdate.Version);
             }
         }
     }
 
     static void Update(string project, string package, string version)
     {
-        using (DotnetStarter.StartDotNet(
+        DotnetStarter.StartDotNet(
             arguments: $"add {project} package {package} -v {version}",
-            directory: Directory.GetParent(project).FullName))
-        {
-        }
+            directory: Directory.GetParent(project).FullName);
     }
 }
