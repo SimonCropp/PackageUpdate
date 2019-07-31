@@ -19,7 +19,7 @@ Project `Tests` has the following updates to its packages
    > HtmlAgilityPack      1.11.6      1.11.6     1.11.7
 
 ".Lines();
-        ObjectApprover.VerifyWithJson(PendingUpdateReader.ParseUpdates(lines));
+        ObjectApprover.Verify(PendingUpdateReader.ParseUpdates(lines));
     }
 
     public PendingUpdateReaderTests(ITestOutputHelper output) :
