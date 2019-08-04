@@ -5,7 +5,7 @@ Source File: /readme.source.md
 To change this file edit the source file and then run MarkdownSnippets.
 -->
 
-# <img src="/PackageUpdate/master/src/icon.png" height="40px"> PackageUpdate
+# <img src="/src/icon.png" height="40px"> PackageUpdate
 
 A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) that updates packages for all solutions in a directory.
 
