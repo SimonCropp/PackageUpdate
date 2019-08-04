@@ -2,6 +2,8 @@
 
 A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) that updates packages for all solutions in a directory.
 
+toc
+
 
 ## Installation
 
@@ -34,6 +36,13 @@ If no directory is passed the current directory will be used.
  * Call [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) with the package and version.
 
 
+## Add to Windows Explorer
+
+Use [/src/context-menu.reg](context-menu.reg) to add PackageUpdate to the Windows Explorer context menu.
+
+snippet: context-menu.reg
+
+
 ## Release Notes
 
 See [closed milestones](https://github.com/SimonCropp/PackageUpdate/milestones?state=closed).
@@ -41,4 +50,4 @@ See [closed milestones](https://github.com/SimonCropp/PackageUpdate/milestones?s
 
 ## Icon
 
-["Update"](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from The Noun Project
+["Update"](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
