@@ -6,11 +6,11 @@
     <AssemblyName>PackageUpdate</AssemblyName>
     <PackageId>PackageUpdate</PackageId>
     <PackAsTool>True</PackAsTool>
-    <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
     <Description>.NET Core Global Tool that updates packages for all solutions in a directory</Description>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.6.0" />
+    <PackageReference Include="ProjectDefaults" Version="1.0.3" PrivateAssets="All" />
   </ItemGroup>
 </Project>

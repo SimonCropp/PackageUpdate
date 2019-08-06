@@ -2,9 +2,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
-    <DebugType>full</DebugType>
-    <DebugSymbols>True</DebugSymbols>
-    <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ApprovalTests" Version="4.0.0" />
@@ -16,5 +13,6 @@
     <PackageReference Include="MarkdownSnippets.MsBuild" Version="16.1.1" />
     <ProjectReference Include="..\PackageUpdate\PackageUpdate.csproj" />
     <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="ProjectDefaults" Version="1.0.3" PrivateAssets="All" />
   </ItemGroup>
 </Project>
