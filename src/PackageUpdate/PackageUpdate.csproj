@@ -8,6 +8,7 @@
     <PackAsTool>True</PackAsTool>
     <Description>.NET Core Global Tool that updates packages for all solutions in a directory</Description>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.6.0" />
