@@ -56,6 +56,7 @@ If no directory is passed the current directory will be used.
 Use [/src/context-menu.reg](context-menu.reg) to add PackageUpdate to the Windows Explorer context menu.
 
 <!-- snippet: context-menu.reg -->
+<a id='snippet-context-menu.reg'/></a>
 ```reg
 Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\Directory\Shell]
@@ -71,7 +72,7 @@ Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\Directory\Background\shell\packageupdate\command]
 @="cmd.exe /c packageupdate \"%V\""
 ```
-<sup>[snippet source](/src/context-menu.reg#L1-L13)</sup>
+<sup>[snippet source](/src/context-menu.reg#L1-L13) / [anchor](#snippet-context-menu.reg)</sup>
 <!-- endsnippet -->
 
 
