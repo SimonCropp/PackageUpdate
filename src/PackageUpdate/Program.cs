@@ -19,18 +19,42 @@ class Program
 
         foreach (var solution in Directory.EnumerateFiles(targetDirectory, "*.sln", SearchOption.AllDirectories))
         {
-            var solutionDirectory = Directory.GetParent(solution).FullName;
-            try
+            TryProcessSolution(solution);
+        }
+    }
+
+    void ProcessDirectories(string directoryPath)
+    {
+        try
+        {
+            foreach (var solution in Directory.EnumerateFiles(directoryPath, "*.sln"))
             {
-                ProcessSolution(solutionDirectory);
+                TryProcessSolution(solution);
             }
-            catch (Exception e)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine($@"Failed to process solution: {solutionDirectory}.
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        foreach (var subDirectory in Directory.EnumerateDirectories(directoryPath))
+        {
+            ProcessDirectories(subDirectory);
+        }
+    }
+
+    static void TryProcessSolution(string solution)
+    {
+        var solutionDirectory = Directory.GetParent(solution).FullName;
+        try
+        {
+            ProcessSolution(solutionDirectory);
+        }
+        catch (Exception e)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine($@"Failed to process solution: {solutionDirectory}.
 Error: {e.Message}");
-                Console.ResetColor();
-            }
+            Console.ResetColor();
         }
     }
 
