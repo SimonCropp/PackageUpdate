@@ -1,4 +1,7 @@
-# <img src="/src/icon.png" height="40px"> PackageUpdate
+# <img src="/src/icon.png" height="30px"> PackageUpdate
+
+[![Build status](https://ci.appveyor.com/api/projects/status/sq3dnh0uyl7sf9uv/branch/master?svg=true)](https://ci.appveyor.com/project/SimonCropp/PackageUpdate)
+[![NuGet Status](https://img.shields.io/nuget/v/PackageUpdate.svg?cacheSeconds=86400)](https://www.nuget.org/packages/PackageUpdate/)
 
 A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) that updates packages for all solutions in a directory.
 
@@ -45,7 +48,7 @@ snippet: context-menu.reg
 
 ## Release Notes
 
-See [closed milestones](https://github.com/SimonCropp/PackageUpdate/milestones?state=closed).
+See [closed milestones](../../milestones?state=closed).
 
 
 ## Icon
