@@ -12,9 +12,8 @@ static class FileSystem
         var stack = new Stack<string>();
         stack.Push(directory);
 
-        while (stack.Any())
+        while (stack.TryPop(out var current))
         {
-            var current = stack.Pop();
             var files = GetFiles(current, pattern);
             allFiles.AddRange(files);
 

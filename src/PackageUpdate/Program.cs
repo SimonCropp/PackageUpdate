@@ -25,25 +25,25 @@ class Program
 
     static void TryProcessSolution(string solution)
     {
-        var solutionDirectory = Directory.GetParent(solution).FullName;
         try
         {
-            ProcessSolution(solutionDirectory);
+            ProcessSolution(solution);
         }
         catch (Exception e)
         {
             Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine($@"Failed to process solution: {solutionDirectory}.
+            Console.WriteLine($@"Failed to process solution: {solution}.
 Error: {e.Message}");
             Console.ResetColor();
         }
     }
-
-    static void ProcessSolution(string solutionDirectory)
+    
+    static void ProcessSolution(string solution)
     {
-        Console.WriteLine($"  {solutionDirectory}");
-        DotnetStarter.StartDotNet("restore", solutionDirectory);
+        Console.WriteLine($"  {solution}");
+        SolutionRestore.Run(solution);
 
+        var solutionDirectory = Directory.GetParent(solution).FullName;
         foreach (var project in Directory.EnumerateFiles(solutionDirectory, "*.csproj", SearchOption.AllDirectories))
         {
             var directory = Directory.GetParent(project).FullName;
