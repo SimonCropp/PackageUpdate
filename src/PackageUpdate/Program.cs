@@ -17,13 +17,10 @@ class Program
             Environment.Exit(1);
         }
 
-        foreach (var solution in Directory.EnumerateFiles(targetDirectory, "*.sln", SearchOption.AllDirectories))
-        {
-            TryProcessSolution(solution);
-        }
+        ProcessDirectories(targetDirectory);
     }
 
-    void ProcessDirectories(string directoryPath)
+    static void ProcessDirectories(string directoryPath)
     {
         try
         {

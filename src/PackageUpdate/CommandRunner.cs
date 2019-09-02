@@ -11,7 +11,7 @@ static class CommandRunner
             var firstArg = args[0];
             if (!firstArg.StartsWith('-'))
             {
-                invoke(firstArg);
+                invoke(firstArg, null);
                 return;
             }
         }
@@ -21,7 +21,7 @@ static class CommandRunner
                 options =>
                 {
                     ApplyDefaults(options);
-                    invoke(options.TargetDirectory);
+                    invoke(options.TargetDirectory, options.Package);
                 });
     }
 
