@@ -1,14 +1,14 @@
 ﻿using System;
 using System.IO;
 
-class Program
+static class Program
 {
     static void Main(string[] args)
     {
         CommandRunner.RunCommand(Inner, args);
     }
 
-    static void Inner(string targetDirectory)
+    internal static void Inner(string targetDirectory)
     {
         Console.WriteLine($"TargetDirectory: {targetDirectory}");
         if (!Directory.Exists(targetDirectory))
@@ -48,10 +48,10 @@ Error: {e.Message}");
         {
             var directory = Directory.GetParent(project).FullName;
             Console.WriteLine($"    {directory.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
-            foreach (var pendingUpdate in PendingUpdateReader.ReadPendingUpdates(directory))
+            foreach (var pending in PendingUpdateReader.ReadPendingUpdates(directory))
             {
-                Console.WriteLine($"      {pendingUpdate.Package} : {pendingUpdate.Version}");
-                Update(project, pendingUpdate.Package, pendingUpdate.Version);
+                Console.WriteLine($"      {pending.Package} : {pending.Version}");
+                Update(project, pending.Package, pending.Version);
             }
         }
     }
