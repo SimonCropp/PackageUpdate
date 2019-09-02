@@ -8,7 +8,7 @@ public class SolutionRestoreTests :
     [Fact]
     public void ThisSolution()
     {
-        var file = Path.Combine(GitRepoDirectoryFinder.Find(), "src","PackageUpdate");
+        var file = Path.Combine(GitRepoDirectoryFinder.Find(), "src", "PackageUpdate");
         SolutionRestore.Run(file);
     }
 
