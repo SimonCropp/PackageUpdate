@@ -44,7 +44,7 @@ Error: {e.Message}");
         SolutionRestore.Run(solution);
 
         var solutionDirectory = Directory.GetParent(solution).FullName;
-        foreach (var project in Directory.EnumerateFiles(solutionDirectory, "*.csproj", SearchOption.AllDirectories))
+        foreach (var project in FileSystem.EnumerateFiles(solutionDirectory, "*.csproj"))
         {
             var directory = Directory.GetParent(project).FullName;
             Console.WriteLine($"    {directory.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
