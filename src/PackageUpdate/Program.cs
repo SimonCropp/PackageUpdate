@@ -17,28 +17,9 @@ class Program
             Environment.Exit(1);
         }
 
-        foreach (var solution in Directory.EnumerateFiles(targetDirectory, "*.sln", SearchOption.AllDirectories))
+        foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.sln"))
         {
             TryProcessSolution(solution);
-        }
-    }
-
-    void ProcessDirectories(string directoryPath)
-    {
-        try
-        {
-            foreach (var solution in Directory.EnumerateFiles(directoryPath, "*.sln"))
-            {
-                TryProcessSolution(solution);
-            }
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
-
-        foreach (var subDirectory in Directory.EnumerateDirectories(directoryPath))
-        {
-            ProcessDirectories(subDirectory);
         }
     }
 
