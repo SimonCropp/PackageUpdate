@@ -5,6 +5,7 @@ public class IntegrationTests :
     XunitLoggingBase
 {
     [Fact]
+    [Trait("Category", "Integration")]
     public void ThisSolution()
     {
         Program.Inner(GitRepoDirectoryFinder.Find());
