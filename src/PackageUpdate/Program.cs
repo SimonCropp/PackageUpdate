@@ -7,10 +7,11 @@ static class Program
     {
         CommandRunner.RunCommand(Inner, args);
     }
-
-    internal static void Inner(string targetDirectory)
+    
+    static void Inner(string targetDirectory, string package)
     {
         Console.WriteLine($"TargetDirectory: {targetDirectory}");
+        Console.WriteLine($"Package: {package}");
         if (!Directory.Exists(targetDirectory))
         {
             Console.WriteLine($"Target directory does not exist: {targetDirectory}");
@@ -19,15 +20,15 @@ static class Program
 
         foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.sln"))
         {
-            TryProcessSolution(solution);
+            TryProcessSolution(solution, package);
         }
     }
 
-    static void TryProcessSolution(string solution)
+    static void TryProcessSolution(string solution, string package)
     {
         try
         {
-            ProcessSolution(solution);
+            ProcessSolution(solution, package);
         }
         catch (Exception e)
         {
@@ -38,30 +39,40 @@ Error: {e.Message}");
         }
     }
 
-    static void ProcessSolution(string solution)
+    static void ProcessSolution(string solution, string package)
     {
         if (Excluder.ShouldExclude(solution))
         {
             Console.WriteLine($"  Exclude: {solution}");
             return;
         }
+
         Console.WriteLine($"  {solution}");
         SolutionRestore.Run(solution);
 
         var solutionDirectory = Directory.GetParent(solution).FullName;
         foreach (var project in FileSystem.EnumerateFiles(solutionDirectory, "*.csproj"))
         {
-            Console.WriteLine($"    {project.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
+            Console.WriteLine($"    {project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar)}");
             foreach (var pending in PendingUpdateReader.ReadPendingUpdates(project))
             {
-                Console.WriteLine($"      {pending.Package} : {pending.Version}");
-                Update(project, pending.Package, pending.Version);
+                if (package == null)
+                {
+                    Update(project, pending.Package, pending.Version);
+                    continue;
+                }
+
+                if (string.Equals(package, pending.Package, StringComparison.OrdinalIgnoreCase))
+                {
+                    Update(project, pending.Package, pending.Version);
+                }
             }
         }
     }
 
     static void Update(string project, string package, string version)
     {
+        Console.WriteLine($"      {package} : {version}");
         DotnetStarter.StartDotNet(
             arguments: $"add {project} package {package} -v {version}",
             directory: Directory.GetParent(project).FullName);
