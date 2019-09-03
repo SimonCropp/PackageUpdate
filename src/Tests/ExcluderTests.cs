@@ -6,8 +6,7 @@ public class ExcluderTests :
     XunitLoggingBase
 {
     [Fact]
-    [Trait("Category", "Integration")]
-    public void ThisSolution()
+    public void Simple()
     {
         Environment.SetEnvironmentVariable("PackageUpdateIgnores", "ignore, otherIgnore");
         Assert.True(Excluder.ShouldExclude("SolutionToIgnore.sln"));
