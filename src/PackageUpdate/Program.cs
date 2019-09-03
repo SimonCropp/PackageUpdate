@@ -1,14 +1,14 @@
 ﻿using System;
 using System.IO;
 
-class Program
+static class Program
 {
     static void Main(string[] args)
     {
         CommandRunner.RunCommand(Inner, args);
     }
 
-    static void Inner(string targetDirectory)
+    internal static void Inner(string targetDirectory)
     {
         Console.WriteLine($"TargetDirectory: {targetDirectory}");
         if (!Directory.Exists(targetDirectory))
@@ -17,57 +17,45 @@ class Program
             Environment.Exit(1);
         }
 
-        ProcessDirectories(targetDirectory);
-    }
-
-    static void ProcessDirectories(string directoryPath)
-    {
-        try
+        foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.sln"))
         {
-            foreach (var solution in Directory.EnumerateFiles(directoryPath, "*.sln"))
-            {
-                TryProcessSolution(solution);
-            }
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
-
-        foreach (var subDirectory in Directory.EnumerateDirectories(directoryPath))
-        {
-            ProcessDirectories(subDirectory);
+            TryProcessSolution(solution);
         }
     }
 
     static void TryProcessSolution(string solution)
     {
-        var solutionDirectory = Directory.GetParent(solution).FullName;
         try
         {
-            ProcessSolution(solutionDirectory);
+            ProcessSolution(solution);
         }
         catch (Exception e)
         {
             Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine($@"Failed to process solution: {solutionDirectory}.
+            Console.WriteLine($@"Failed to process solution: {solution}.
 Error: {e.Message}");
             Console.ResetColor();
         }
     }
 
-    static void ProcessSolution(string solutionDirectory)
+    static void ProcessSolution(string solution)
     {
-        Console.WriteLine($"  {solutionDirectory}");
-        DotnetStarter.StartDotNet("restore", solutionDirectory);
-
-        foreach (var project in Directory.EnumerateFiles(solutionDirectory, "*.csproj", SearchOption.AllDirectories))
+        if (Excluder.ShouldExclude(solution))
         {
-            var directory = Directory.GetParent(project).FullName;
-            Console.WriteLine($"    {directory.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
-            foreach (var pendingUpdate in PendingUpdateReader.ReadPendingUpdates(directory))
+            Console.WriteLine($"  Exclude: {solution}");
+            return;
+        }
+        Console.WriteLine($"  {solution}");
+        SolutionRestore.Run(solution);
+
+        var solutionDirectory = Directory.GetParent(solution).FullName;
+        foreach (var project in FileSystem.EnumerateFiles(solutionDirectory, "*.csproj"))
+        {
+            Console.WriteLine($"    {project.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
+            foreach (var pending in PendingUpdateReader.ReadPendingUpdates(project))
             {
-                Console.WriteLine($"      {pendingUpdate.Package} : {pendingUpdate.Version}");
-                Update(project, pendingUpdate.Package, pendingUpdate.Version);
+                Console.WriteLine($"      {pending.Package} : {pending.Version}");
+                Update(project, pending.Package, pending.Version);
             }
         }
     }
