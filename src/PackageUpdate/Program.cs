@@ -37,9 +37,14 @@ Error: {e.Message}");
             Console.ResetColor();
         }
     }
-    
+
     static void ProcessSolution(string solution)
     {
+        if (Excluder.ShouldExclude(solution))
+        {
+            Console.WriteLine($"  Exclude: {solution}");
+            return;
+        }
         Console.WriteLine($"  {solution}");
         SolutionRestore.Run(solution);
 
