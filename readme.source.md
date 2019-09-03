@@ -30,6 +30,37 @@ packageupdate C:\Code\TargetDirectory
 If no directory is passed the current directory will be used.
 
 
+### Arguments
+
+
+#### Target Directory
+
+```ps
+packageupdate C:\Code\TargetDirectory
+```
+
+```ps
+packageupdate -t C:\Code\TargetDirectory
+```
+
+```ps
+packageupdate --target-directory C:\Code\TargetDirectory
+```
+
+
+#### Package
+
+The package name to update. If not specified, all packages will be updated.
+
+```ps
+packageupdate -p packageName
+```
+
+```ps
+packageupdate --package packageName
+```
+
+
 ### Behavior
 
  * Recursively scan the target directory for all directories containing a `.sln` file.

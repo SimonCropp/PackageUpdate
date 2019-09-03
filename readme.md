@@ -17,6 +17,7 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
 
   * [Installation](#installation)
   * [Usage](#usage)
+    * [Arguments](#arguments)
     * [Behavior](#behavior)
   * [Add to Windows Explorer](#add-to-windows-explorer)
 <!-- endtoc -->
@@ -43,6 +44,37 @@ packageupdate C:\Code\TargetDirectory
 ```
 
 If no directory is passed the current directory will be used.
+
+
+### Arguments
+
+
+#### Target Directory
+
+```ps
+packageupdate C:\Code\TargetDirectory
+```
+
+```ps
+packageupdate -t C:\Code\TargetDirectory
+```
+
+```ps
+packageupdate --target-directory C:\Code\TargetDirectory
+```
+
+
+#### Package
+
+The package name to update. If not specified, all packages will be updated.
+
+```ps
+packageupdate -p packageName
+```
+
+```ps
+packageupdate --package packageName
+```
 
 
 ### Behavior
