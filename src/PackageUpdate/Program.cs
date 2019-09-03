@@ -51,9 +51,8 @@ Error: {e.Message}");
         var solutionDirectory = Directory.GetParent(solution).FullName;
         foreach (var project in FileSystem.EnumerateFiles(solutionDirectory, "*.csproj"))
         {
-            var directory = Directory.GetParent(project).FullName;
-            Console.WriteLine($"    {directory.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
-            foreach (var pending in PendingUpdateReader.ReadPendingUpdates(directory))
+            Console.WriteLine($"    {project.Replace(solutionDirectory,"").Trim(Path.DirectorySeparatorChar)}");
+            foreach (var pending in PendingUpdateReader.ReadPendingUpdates(project))
             {
                 Console.WriteLine($"      {pending.Package} : {pending.Version}");
                 Update(project, pending.Package, pending.Version);
