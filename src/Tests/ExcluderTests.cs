@@ -3,7 +3,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 public class ExcluderTests :
-    XunitLoggingBase
+    XunitApprovalBase
 {
     [Fact]
     public void Simple()

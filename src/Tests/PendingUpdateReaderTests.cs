@@ -2,7 +2,7 @@
 using Xunit.Abstractions;
 
 public class PendingUpdateReaderTests :
-    XunitLoggingBase
+    XunitApprovalBase
 {
     [Fact]
     public void Simple()
