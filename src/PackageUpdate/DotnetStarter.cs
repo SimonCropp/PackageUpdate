@@ -23,18 +23,19 @@ static class DotnetStarter
         {
             process.Start();
             process.WaitForExit();
-            if (process.ExitCode != 0)
+            if (process.ExitCode == 0)
             {
-                var error = process.StandardError.ReadToEnd();
-                var output = process.StandardOutput.ReadToEnd();
-                throw new Exception($@"Command: dotnet {arguments}
+                return process.ReadLines().ToList();
+            }
+
+            var error = process.StandardError.ReadToEnd();
+            var output = process.StandardOutput.ReadToEnd();
+            throw new Exception($@"Command: dotnet {arguments}
 WorkingDirectory: {directory}
 ExitCode: {process.ExitCode}
 Error: {error}
 Output: {output}");
-            }
 
-            return process.ReadLines().ToList();
         }
     }
 }
