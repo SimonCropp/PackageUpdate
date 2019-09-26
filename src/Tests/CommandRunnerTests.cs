@@ -6,8 +6,8 @@ using Xunit.Abstractions;
 public class CommandRunnerTests :
     XunitApprovalBase
 {
-    string targetDirectory;
-    string package;
+    string? targetDirectory;
+    string? package;
 
     [Fact]
     public void Empty()
@@ -65,7 +65,7 @@ public class CommandRunnerTests :
         Assert.Equal("packageName", package);
     }
 
-    void Capture(string targetDirectory, string package)
+    void Capture(string targetDirectory, string? package)
     {
         this.targetDirectory = targetDirectory;
         this.package = package;

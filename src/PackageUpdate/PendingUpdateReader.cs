@@ -25,10 +25,10 @@ static class PendingUpdateReader
             var package = split[1];
             var version = split[4];
             yield return new PendingUpdate
-            {
-                Package = package,
-                Version = version
-            };
+            (
+                package: package,
+                version: version
+            );
         }
     }
 }

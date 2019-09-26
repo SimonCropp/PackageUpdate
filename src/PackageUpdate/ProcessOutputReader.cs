@@ -5,7 +5,7 @@ public static class ProcessOutputReader
 {
     public static IEnumerable<string> ReadLines(this Process process)
     {
-        string line;
+        string? line;
         var list = new List<string>();
         while ((line = process.StandardOutput.ReadLine()) != null)
         {

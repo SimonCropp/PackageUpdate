@@ -20,20 +20,18 @@ static class CommandRunner
             .WithParsed(
                 options =>
                 {
-                    ApplyDefaults(options);
-                    invoke(options.TargetDirectory, options.Package);
+                    var targetDirectory = FindTargetDirectory(options.TargetDirectory);
+                    invoke(targetDirectory, options.Package);
                 });
     }
 
-    static void ApplyDefaults(Options options)
+    static string FindTargetDirectory(string? targetDirectory)
     {
-        if (options.TargetDirectory == null)
+        if (targetDirectory == null)
         {
-            options.TargetDirectory = Environment.CurrentDirectory;
+            return Environment.CurrentDirectory;
         }
-        else
-        {
-            options.TargetDirectory = Path.GetFullPath(options.TargetDirectory);
-        }
+
+        return Path.GetFullPath(targetDirectory);
     }
 }

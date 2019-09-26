@@ -8,7 +8,7 @@ static class Program
         CommandRunner.RunCommand(Inner, args);
     }
     
-    static void Inner(string targetDirectory, string package)
+    static void Inner(string targetDirectory, string? package)
     {
         Console.WriteLine($"TargetDirectory: {targetDirectory}");
         Console.WriteLine($"Package: {package}");
@@ -24,7 +24,7 @@ static class Program
         }
     }
 
-    static void TryProcessSolution(string solution, string package)
+    static void TryProcessSolution(string solution, string? package)
     {
         try
         {
@@ -39,7 +39,7 @@ Error: {e.Message}");
         }
     }
 
-    static void ProcessSolution(string solution, string package)
+    static void ProcessSolution(string solution, string? package)
     {
         if (Excluder.ShouldExclude(solution))
         {
