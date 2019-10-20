@@ -7,7 +7,7 @@ static class Program
     {
         CommandRunner.RunCommand(Inner, args);
     }
-    
+
     static void Inner(string targetDirectory, string? package)
     {
         Console.WriteLine($"TargetDirectory: {targetDirectory}");

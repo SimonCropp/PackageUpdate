@@ -8,7 +8,7 @@ static class FileSystem
     public static IEnumerable<string> EnumerateFiles(string directory, string pattern)
     {
         var allFiles = new List<string>();
-    
+
         var stack = new Stack<string>();
         stack.Push(directory);
 
@@ -25,7 +25,7 @@ static class FileSystem
 
         return allFiles;
     }
-    
+
     static IEnumerable<string> GetFiles(string directory, string pattern)
     {
         try
@@ -37,7 +37,7 @@ static class FileSystem
             return Enumerable.Empty<string>();
         }
     }
-    
+
     static IEnumerable<string> GetDirectories(string directory)
     {
         try
