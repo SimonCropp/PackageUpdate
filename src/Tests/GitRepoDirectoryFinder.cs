@@ -1,19 +1,20 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 static class GitRepoDirectoryFinder
 {
     public static string Find()
     {
-        if (!TryFind(out var rootDirectory))
+        if (TryFind(out var rootDirectory))
         {
-            throw new Exception("Could not find root git directory");
+            return rootDirectory;
         }
 
-        return rootDirectory;
+        throw new Exception("Could not find root git directory");
     }
 
-    public static bool TryFind(out string path)
+    public static bool TryFind([NotNullWhen(true)] out string? path)
     {
         var currentDirectory = AssemblyLocation.CurrentDirectory;
         do
@@ -27,7 +28,7 @@ static class GitRepoDirectoryFinder
             var parent = Directory.GetParent(currentDirectory);
             if (parent == null)
             {
-                path = "";
+                path = null;
                 return false;
             }
 
