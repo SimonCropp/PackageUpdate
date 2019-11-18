@@ -19,6 +19,7 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
   * [Usage](#usage)
     * [Arguments](#arguments)
     * [Behavior](#behavior)
+  * [PackageUpdateIgnores](#packageupdateignores)
   * [Add to Windows Explorer](#add-to-windows-explorer)
 <!-- endtoc -->
 
@@ -84,6 +85,17 @@ packageupdate --package packageName
  * Recursively scan the directory for `*.csproj` files.
  * Call [dotnet list package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-list-package) to get the list of pending packages.
  * Call [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) with the package and version.
+
+
+## PackageUpdateIgnores
+
+When processing multiple directories, it is sometimes desirable to "always ignore" certain directories. This can be done by adding a `PackageUpdateIgnores` environment variable:
+
+```
+setx PackageUpdateIgnores "AspNetCore,EntityFrameworkCore"
+```
+
+The value is comma separated.
 
 
 ## Add to Windows Explorer

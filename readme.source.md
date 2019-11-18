@@ -70,6 +70,17 @@ packageupdate --package packageName
  * Call [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) with the package and version.
 
 
+## PackageUpdateIgnores
+
+When processing multiple directories, it is sometimes desirable to "always ignore" certain directories. This can be done by adding a `PackageUpdateIgnores` environment variable:
+
+```
+setx PackageUpdateIgnores "AspNetCore,EntityFrameworkCore"
+```
+
+The value is comma separated.
+
+
 ## Add to Windows Explorer
 
 Use [/src/context-menu.reg](context-menu.reg) to add PackageUpdate to the Windows Explorer context menu.
