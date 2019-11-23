@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
+using VerifyXunit;
 using Xunit;
 using Xunit.Abstractions;
 
 public class CommandRunnerTests :
-    XunitApprovalBase
+    VerifyBase
 {
     string? targetDirectory;
     string? package;

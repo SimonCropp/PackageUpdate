@@ -1,9 +1,10 @@
 ﻿using System.IO;
+using VerifyXunit;
 using Xunit;
 using Xunit.Abstractions;
 
 public class SolutionRestoreTests :
-    XunitApprovalBase
+    VerifyBase
 {
     [Fact]
     public void ThisSolution()

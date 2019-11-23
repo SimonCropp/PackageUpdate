@@ -1,11 +1,13 @@
-﻿using Xunit;
+﻿using System.Threading.Tasks;
+using VerifyXunit;
+using Xunit;
 using Xunit.Abstractions;
 
 public class PendingUpdateReaderTests :
-    XunitApprovalBase
+    VerifyBase
 {
     [Fact]
-    public void Simple()
+    public Task Simple()
     {
         var lines = @"
 The following sources were used:
@@ -18,7 +20,7 @@ Project `Tests` has the following updates to its packages
    > HtmlAgilityPack      1.11.6      1.11.6     1.11.7
 
 ".Lines();
-        ObjectApprover.Verify(PendingUpdateReader.ParseUpdates(lines));
+        return Verify(PendingUpdateReader.ParseUpdates(lines));
     }
 
     public PendingUpdateReaderTests(ITestOutputHelper output) :
