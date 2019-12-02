@@ -20,9 +20,7 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
     * [Arguments](#arguments)
     * [Behavior](#behavior)
   * [PackageUpdateIgnores](#packageupdateignores)
-  * [Add to Windows Explorer](#add-to-windows-explorer)
-<!-- endtoc -->
-
+  * [Add to Windows Explorer](#add-to-windows-explorer)<!-- endtoc -->
 
 
 ## Installation

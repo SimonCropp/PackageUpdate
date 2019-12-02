@@ -1,30 +1,40 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using CommandLine;
 
 static class CommandRunner
 {
-    public static void RunCommand(Invoke invoke, params string[] args)
+    public static Task RunCommand(Invoke invoke, params string[] args)
     {
         if (args.Length == 1)
         {
             var firstArg = args[0];
             if (!firstArg.StartsWith('-'))
             {
-                invoke(firstArg, null);
-                return;
+                return invoke(firstArg, null);
             }
         }
 
-        Parser.Default.ParseArguments<Options>(args)
-            .WithParsed(
+        return Parser.Default.ParseArguments<Options>(args)
+            .WithParsedAsync(
                 options =>
                 {
                     var targetDirectory = FindTargetDirectory(options.TargetDirectory);
-                    invoke(targetDirectory, options.Package);
+                    return invoke(targetDirectory, options.Package);
                 });
     }
 
+    static async Task<ParserResult<T>> WithParsedAsync<T>(
+        this ParserResult<T> result,
+        Func<T,Task> action)
+    {
+        if (result is Parsed<T> parsed)
+        {
+            await action(parsed.Value);
+        }
+        return result;
+    }
     static string FindTargetDirectory(string? targetDirectory)
     {
         if (targetDirectory == null)

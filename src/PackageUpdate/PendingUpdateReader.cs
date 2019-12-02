@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 static class PendingUpdateReader
 {
-    public static List<PendingUpdate> ReadPendingUpdates(string file)
+    public static async Task<List<PendingUpdate>> ReadPendingUpdates(string file)
     {
         var directory = Directory.GetParent(file).FullName;
-        var lines = DotnetStarter.StartDotNet($"list {file} package --outdated", directory);
+        var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated", directory);
         return ParseUpdates(lines).ToList();
     }
 

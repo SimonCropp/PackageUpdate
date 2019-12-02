@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Threading.Tasks;
 
 static class DotnetStarter
 {
-    public static List<string> StartDotNet(string arguments, string directory)
+    public static async Task<List<string>> StartDotNet(string arguments, string directory)
     {
         using var process = new Process
         {
@@ -24,11 +24,11 @@ static class DotnetStarter
         process.WaitForExit();
         if (process.ExitCode == 0)
         {
-            return process.ReadLines().ToList();
+            return await process.ReadLines();
         }
 
-        var error = process.StandardError.ReadToEnd();
-        var output = process.StandardOutput.ReadToEnd();
+        var error = await process.StandardError.ReadToEndAsync();
+        var output = await process.StandardOutput.ReadToEndAsync();
         throw new Exception($@"Command: dotnet {arguments}
 WorkingDirectory: {directory}
 ExitCode: {process.ExitCode}
