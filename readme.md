@@ -33,8 +33,6 @@ Install [PackageUpdate](https://nuget.org/packages/PackageUpdate/)
 dotnet tool install -g PackageUpdate
 ```
 
-**There is known a issue with dotnet tools on macOS and Linux that results in [installed tools not being discovered in the current path](https://github.com/dotnet/cli/issues/9321). The workaround is to add `~/.dotnet/tools` to the PATH.**
-
 
 ## Usage
 
