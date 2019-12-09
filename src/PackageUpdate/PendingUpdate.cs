@@ -1,11 +1,13 @@
 ﻿class PendingUpdate
 {
     public string Package { get; }
-    public string Version { get; }
+    public string Resolved  { get; }
+    public string Latests  { get; }
 
-    public PendingUpdate(string package, string version)
+    public PendingUpdate(string package, string resolved, string latests)
     {
         Package = package;
-        Version = version;
+        Resolved = resolved;
+        Latests = latests;
     }
 }

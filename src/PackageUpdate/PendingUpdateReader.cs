@@ -10,7 +10,19 @@ static class PendingUpdateReader
     {
         var directory = Directory.GetParent(file).FullName;
         var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated", directory);
-        return ParseUpdates(lines).ToList();
+        return ParseWithUpdates(lines).ToList();
+    }
+
+    public static IEnumerable<PendingUpdate> ParseWithUpdates(List<string> lines)
+    {
+        return ParseUpdates(lines).Where(StableOrWithPreRelease);
+    }
+
+    static bool StableOrWithPreRelease(PendingUpdate update)
+    {
+        var resolvedIsStable = !update.Resolved.Contains('-');
+        var latestIsStable = !update.Latests.Contains('-');
+        return !resolvedIsStable || latestIsStable;
     }
 
     public static IEnumerable<PendingUpdate> ParseUpdates(IEnumerable<string> lines)
@@ -24,11 +36,13 @@ static class PendingUpdateReader
 
             var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var package = split[1];
-            var version = split[4];
+            var resolved = split[3];
+            var latests = split[4];
             yield return new PendingUpdate
             (
                 package: package,
-                version: version
+                resolved: resolved,
+                latests: latests
             );
         }
     }

@@ -59,13 +59,13 @@ Error: {e.Message}");
             {
                 if (package == null)
                 {
-                    await Update(project, pending.Package, pending.Version);
+                    await Update(project, pending.Package, pending.Latests);
                     continue;
                 }
 
                 if (string.Equals(package, pending.Package, StringComparison.OrdinalIgnoreCase))
                 {
-                    await Update(project, pending.Package, pending.Version);
+                    await Update(project, pending.Package, pending.Latests);
                 }
             }
         }
