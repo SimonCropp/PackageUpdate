@@ -59,7 +59,7 @@ Error: {e.Message}");
             {
                 if (package == null)
                 {
-                   await Update(project, pending.Package, pending.Version);
+                    await Update(project, pending.Package, pending.Version);
                     continue;
                 }
 
@@ -71,10 +71,10 @@ Error: {e.Message}");
         }
     }
 
-    static async Task Update(string project, string package, string version)
+    static Task Update(string project, string package, string version)
     {
         Console.WriteLine($"      {package} : {version}");
-        await DotnetStarter.StartDotNet(
+        return DotnetStarter.StartDotNet(
             arguments: $"add {project} package {package} -v {version}",
             directory: Directory.GetParent(project).FullName);
     }
