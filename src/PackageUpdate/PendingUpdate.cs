@@ -2,12 +2,14 @@
 {
     public string Package { get; }
     public string Resolved  { get; }
-    public string Latests  { get; }
+    public string Latest  { get; }
+    public bool IsDeprecated { get; }
 
-    public PendingUpdate(string package, string resolved, string latests)
+    public PendingUpdate(string package, string resolved, string latest, bool isDeprecated)
     {
         Package = package;
         Resolved = resolved;
-        Latests = latests;
+        Latest = latest;
+        IsDeprecated = isDeprecated;
     }
 }

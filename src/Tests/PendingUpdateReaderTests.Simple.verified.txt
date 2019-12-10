@@ -3,14 +3,14 @@
     {
       Package: 'HtmlAgilityPack',
       Resolved: '1.11.6',
-      Latests: '1.11.7'
+      Latest: '1.11.7'
     }
   ],
   withUpdates: [
     {
       Package: 'HtmlAgilityPack',
       Resolved: '1.11.6',
-      Latests: '1.11.7'
+      Latest: '1.11.7'
     }
   ]
 }

@@ -3,19 +3,19 @@
     {
       Package: 'Microsoft.NET.Test.Sdk',
       Resolved: '16.4.0',
-      Latests: '16.5.0-preview-20191115-01'
+      Latest: '16.5.0-preview-20191115-01'
     },
     {
       Package: 'Verify.Xunit',
       Resolved: '1.0.0-beta.31',
-      Latests: '1.0.0-beta.32'
+      Latest: '1.0.0-beta.32'
     }
   ],
   withUpdates: [
     {
       Package: 'Verify.Xunit',
       Resolved: '1.0.0-beta.31',
-      Latests: '1.0.0-beta.32'
+      Latest: '1.0.0-beta.32'
     }
   ]
 }

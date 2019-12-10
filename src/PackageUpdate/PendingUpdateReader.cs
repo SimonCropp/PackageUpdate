@@ -20,8 +20,12 @@ static class PendingUpdateReader
 
     static bool StableOrWithPreRelease(PendingUpdate update)
     {
+        if (update.IsDeprecated)
+        {
+            return false;
+        }
         var resolvedIsStable = !update.Resolved.Contains('-');
-        var latestIsStable = !update.Latests.Contains('-');
+        var latestIsStable = !update.Latest.Contains('-');
         return !resolvedIsStable || latestIsStable;
     }
 
@@ -37,12 +41,14 @@ static class PendingUpdateReader
             var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var package = split[1];
             var resolved = split[3];
-            var latests = split[4];
+            var latest = split[4];
+            var isDeprecated = line.EndsWith("(D)");
             yield return new PendingUpdate
             (
                 package: package,
                 resolved: resolved,
-                latests: latests
+                latest: latest,
+                isDeprecated: isDeprecated
             );
         }
     }
