@@ -22,7 +22,12 @@ static class DotnetStarter
         };
         process.Start();
         Console.WriteLine($"    dotnet {arguments}");
-        process.WaitForExit();
+        if (!process.WaitForExit(10000))
+        {
+            throw new Exception($@"Command: dotnet {arguments}
+Timed out
+WorkingDirectory: {directory}");
+        }
         if (process.ExitCode == 0)
         {
             return await process.ReadLines();
