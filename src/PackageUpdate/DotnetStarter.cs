@@ -21,6 +21,7 @@ static class DotnetStarter
             }
         };
         process.Start();
+        Console.WriteLine($"    dotnet {arguments}");
         process.WaitForExit();
         if (process.ExitCode == 0)
         {
