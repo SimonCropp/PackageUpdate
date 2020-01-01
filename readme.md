@@ -23,6 +23,11 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
   * [Add to Windows Explorer](#add-to-windows-explorer)<!-- endtoc -->
 
 
+## NuGet package
+
+https://nuget.org/packages/PackageUpdate/
+
+
 ## Installation
 
 Ensure [dotnet CLI is installed](https://docs.microsoft.com/en-us/dotnet/core/tools/).
