@@ -1,44 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 static class DotnetStarter
 {
-    public static async Task<List<string>> StartDotNet(string arguments, string directory)
+    public static async Task<string[]> StartDotNet(string arguments)
     {
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = arguments,
-                WorkingDirectory = directory,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            }
-        };
-        process.Start();
+        var result = await ProcessHelper.RunProcessAsync("dotnet", arguments, 10000);
         Console.WriteLine($"    dotnet {arguments}");
-        if (!process.WaitForExit(10000))
+        if (result.ExitCode != 0)
         {
             throw new Exception($@"Command: dotnet {arguments}
-Timed out
-WorkingDirectory: {directory}");
-        }
-        if (process.ExitCode == 0)
-        {
-            return await process.ReadLines();
+Timed out");
         }
 
-        var error = await process.StandardError.ReadToEndAsync();
-        var output = await process.StandardOutput.ReadToEndAsync();
-        throw new Exception($@"Command: dotnet {arguments}
-WorkingDirectory: {directory}
-ExitCode: {process.ExitCode}
-Error: {error}
-Output: {output}");
+        return result.Output.Split(new[] {'\r', '\n'}, StringSplitOptions.RemoveEmptyEntries);
     }
 }

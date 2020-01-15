@@ -9,11 +9,12 @@ static class PendingUpdateReader
     public static async Task<List<PendingUpdate>> ReadPendingUpdates(string file)
     {
         var directory = Directory.GetParent(file).FullName;
-        var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated", directory);
+        Console.WriteLine("    ReadPendingUpdates");
+        var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated");
         return ParseWithUpdates(lines).ToList();
     }
 
-    public static IEnumerable<PendingUpdate> ParseWithUpdates(List<string> lines)
+    public static IEnumerable<PendingUpdate> ParseWithUpdates(IEnumerable<string> lines)
     {
         return ParseUpdates(lines).Where(StableOrWithPreRelease);
     }

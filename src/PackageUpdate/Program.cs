@@ -75,7 +75,6 @@ Error: {e.Message}");
     {
         Console.WriteLine($"      {package} : {version}");
         return DotnetStarter.StartDotNet(
-            arguments: $"add {project} package {package} -v {version}",
-            directory: Directory.GetParent(project).FullName);
+            arguments: $"add {project} package {package} -v {version}");
     }
 }
