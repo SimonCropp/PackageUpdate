@@ -84,6 +84,8 @@ public static class ProcessHelper
             {
                 // ignored
             }
+
+            result.Killed = true;
         }
         return result;
     }
