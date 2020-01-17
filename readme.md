@@ -21,7 +21,8 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
     * [Behavior](#behavior)
   * [PackageUpdateIgnores](#packageupdateignores)
   * [Add to Windows Explorer](#add-to-windows-explorer)
-  * [Notes](#notes)<!-- endtoc -->
+  * [Notes](#notes)
+  * [Security contact information](#security-contact-information)<!-- endtoc -->
 
 
 ## NuGet package
@@ -127,6 +128,11 @@ Windows Registry Editor Version 5.00
 ## Notes
 
  * dotnet tools install location is `%USERPROFILE%\.dotnet\tools`.
+
+
+## Security contact information
+
+To report a security vulnerability, please use the [Tidelift security contact](https://tidelift.com/security). Tidelift will coordinate the fix and disclosure.
 
 
 ## Release Notes
