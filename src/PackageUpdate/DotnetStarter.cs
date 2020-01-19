@@ -7,13 +7,10 @@ static class DotnetStarter
     {
         var result = await ProcessHelper.RunProcessAsync("dotnet", arguments, 10000);
         Console.WriteLine($"    dotnet {arguments}");
-        if (result.HasFailed)
+        if (result.ExitCode != 0)
         {
-            throw new Exception($@"Command failed: dotnet {arguments}
-Killed: {result.Killed}
-ExitCode: {result.ExitCode}
-Output: {result.Output}
-Error: {result.Error}");
+            throw new Exception($@"Command: dotnet {arguments}
+Timed out");
         }
 
         return result.Output.Split(new[] {'\r', '\n'}, StringSplitOptions.RemoveEmptyEntries);
