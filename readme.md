@@ -20,9 +20,13 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
     * [Arguments](#arguments)
     * [Behavior](#behavior)
   * [PackageUpdateIgnores](#packageupdateignores)
+<<<<<<< HEAD
   * [Add to Windows Explorer](#add-to-windows-explorer)
   * [Notes](#notes)
   * [Security contact information](#security-contact-information)<!-- endtoc -->
+=======
+  * [Add to Windows Explorer](#add-to-windows-explorer)<!-- endtoc -->
+>>>>>>> parent of 66ecbc2... better async
 
 
 ## NuGet package
@@ -125,10 +129,6 @@ Windows Registry Editor Version 5.00
 <sup><a href='/src/context-menu.reg#L1-L13' title='File snippet `context-menu.reg` was extracted from'>snippet source</a> | <a href='#snippet-context-menu.reg' title='Navigate to start of snippet `context-menu.reg`'>anchor</a></sup>
 <!-- endsnippet -->
 
-## Notes
-
- * dotnet tools install location is `%USERPROFILE%\.dotnet\tools`.
-
 
 ## Security contact information
 
@@ -142,4 +142,4 @@ See [closed milestones](../../milestones?state=closed).
 
 ## Icon
 
-[Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
+["Update"](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
