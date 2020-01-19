@@ -103,4 +103,4 @@ See [closed milestones](../../milestones?state=closed).
 
 ## Icon
 
-["Update"](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
+[Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).

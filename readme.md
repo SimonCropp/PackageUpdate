@@ -20,13 +20,8 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
     * [Arguments](#arguments)
     * [Behavior](#behavior)
   * [PackageUpdateIgnores](#packageupdateignores)
-<<<<<<< HEAD
   * [Add to Windows Explorer](#add-to-windows-explorer)
-  * [Notes](#notes)
   * [Security contact information](#security-contact-information)<!-- endtoc -->
-=======
-  * [Add to Windows Explorer](#add-to-windows-explorer)<!-- endtoc -->
->>>>>>> parent of 66ecbc2... better async
 
 
 ## NuGet package
@@ -142,4 +137,4 @@ See [closed milestones](../../milestones?state=closed).
 
 ## Icon
 
-["Update"](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
+[Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
