@@ -96,11 +96,6 @@ snippet: context-menu.reg
 To report a security vulnerability, use the [Tidelift security contact](https://tidelift.com/security). Tidelift will coordinate the fix and disclosure.
 
 
-## Release Notes
-
-See [closed milestones](../../milestones?state=closed).
-
-
 ## Icon
 
 [Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
