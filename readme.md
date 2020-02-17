@@ -12,6 +12,8 @@ To change this file edit the source file and then run MarkdownSnippets.
 
 A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) that updates packages for all solutions in a directory.
 
+Support is available via a [Tidelift Subscription](https://tidelift.com/subscription/pkg/nuget-packageupdate?utm_source=nuget-packageupdate&utm_medium=referral&utm_campaign=enterprise).
+
 <!-- toc -->
 ## Contents
 
