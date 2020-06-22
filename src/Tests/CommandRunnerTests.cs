@@ -1,12 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using VerifyXunit;
 using Xunit;
-using Xunit.Abstractions;
 
-public class CommandRunnerTests :
-    VerifyBase
+public class CommandRunnerTests
 {
     string? targetDirectory;
     string? package;
@@ -72,10 +69,5 @@ public class CommandRunnerTests :
         this.targetDirectory = targetDirectory;
         this.package = package;
         return Task.CompletedTask;
-    }
-
-    public CommandRunnerTests(ITestOutputHelper output) :
-        base(output)
-    {
     }
 }

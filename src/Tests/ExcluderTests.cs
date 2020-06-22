@@ -1,10 +1,7 @@
 ﻿using System;
-using VerifyXunit;
 using Xunit;
-using Xunit.Abstractions;
 
-public class ExcluderTests :
-    VerifyBase
+public class ExcluderTests
 {
     [Fact]
     public void Simple()
@@ -13,10 +10,5 @@ public class ExcluderTests :
         Assert.True(Excluder.ShouldExclude("SolutionToIgnore.sln"));
         Assert.True(Excluder.ShouldExclude("SolutionOtherIgnore.sln"));
         Assert.False(Excluder.ShouldExclude("Solution.sln"));
-    }
-
-    public ExcluderTests(ITestOutputHelper output) :
-        base(output)
-    {
     }
 }

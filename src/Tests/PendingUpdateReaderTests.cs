@@ -2,10 +2,9 @@
 using System.Threading.Tasks;
 using VerifyXunit;
 using Xunit;
-using Xunit.Abstractions;
 
-public class PendingUpdateReaderTests :
-    VerifyBase
+[UsesVerify]
+public class PendingUpdateReaderTests
 {
     [Fact]
     public Task Deprecated()
@@ -62,16 +61,11 @@ Project `Tests` has the following updates to its packages
     Task VerifyUpdates(string input)
     {
         var lines = input.Lines().ToList();
-        return Verify(
+        return Verifier.Verify(
             new
             {
                 parsed = PendingUpdateReader.ParseUpdates(lines),
                 withUpdates = PendingUpdateReader.ParseWithUpdates(lines)
             });
-    }
-
-    public PendingUpdateReaderTests(ITestOutputHelper output) :
-        base(output)
-    {
     }
 }
