@@ -107,7 +107,7 @@ The value is comma separated.
 Use [src/context-menu.reg](context-menu.reg) to add PackageUpdate to the Windows Explorer context menu.
 
 <!-- snippet: context-menu.reg -->
-<a id='snippet-context-menu.reg'/></a>
+<a id='snippet-context-menu.reg'></a>
 ```reg
 Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\Directory\Shell]
