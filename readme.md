@@ -23,7 +23,7 @@ Support is available via a [Tidelift Subscription](https://tidelift.com/subscrip
     * [Behavior](#behavior)
   * [PackageUpdateIgnores](#packageupdateignores)
   * [Add to Windows Explorer](#add-to-windows-explorer)
-  * [Security contact information](#security-contact-information)<!-- endtoc -->
+  * [Security contact information](#security-contact-information)<!-- endToc -->
 
 
 ## NuGet package
@@ -124,7 +124,7 @@ Windows Registry Editor Version 5.00
 @="cmd.exe /c packageupdate \"%V\""
 ```
 <sup><a href='/src/context-menu.reg#L1-L13' title='File snippet `context-menu.reg` was extracted from'>snippet source</a> | <a href='#snippet-context-menu.reg' title='Navigate to start of snippet `context-menu.reg`'>anchor</a></sup>
-<!-- endsnippet -->
+<!-- endSnippet -->
 
 
 ## Security contact information
