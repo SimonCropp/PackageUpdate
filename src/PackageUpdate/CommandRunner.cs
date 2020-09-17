@@ -27,14 +27,16 @@ static class CommandRunner
 
     static async Task<ParserResult<T>> WithParsedAsync<T>(
         this ParserResult<T> result,
-        Func<T,Task> action)
+        Func<T, Task> action)
     {
         if (result is Parsed<T> parsed)
         {
             await action(parsed.Value);
         }
+
         return result;
     }
+
     static string FindTargetDirectory(string? targetDirectory)
     {
         if (targetDirectory == null)
