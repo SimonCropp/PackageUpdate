@@ -123,7 +123,7 @@ Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\Directory\Background\shell\packageupdate\command]
 @="cmd.exe /c packageupdate \"%V\""
 ```
-<sup><a href='/src/context-menu.reg#L1-L13' title='File snippet `context-menu.reg` was extracted from'>snippet source</a> | <a href='#snippet-context-menu.reg' title='Navigate to start of snippet `context-menu.reg`'>anchor</a></sup>
+<sup><a href='/src/context-menu.reg#L1-L13' title='Snippet source file'>snippet source</a> | <a href='#snippet-context-menu.reg' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
