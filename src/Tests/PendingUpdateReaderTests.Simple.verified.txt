@@ -1,16 +1,16 @@
 {
   parsed: [
     {
-      Package: 'HtmlAgilityPack',
-      Resolved: '1.11.6',
-      Latest: '1.11.7'
+      Package: HtmlAgilityPack,
+      Resolved: 1.11.6,
+      Latest: 1.11.7
     }
   ],
   withUpdates: [
     {
-      Package: 'HtmlAgilityPack',
-      Resolved: '1.11.6',
-      Latest: '1.11.7'
+      Package: HtmlAgilityPack,
+      Resolved: 1.11.6,
+      Latest: 1.11.7
     }
   ]
 }
