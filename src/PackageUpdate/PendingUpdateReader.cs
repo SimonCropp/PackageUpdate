@@ -8,7 +8,7 @@ static class PendingUpdateReader
 {
     public static async Task<List<PendingUpdate>> ReadPendingUpdates(string file)
     {
-        var directory = Directory.GetParent(file).FullName;
+        var directory = Directory.GetParent(file)!.FullName;
         var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated", directory);
         return ParseWithUpdates(lines).ToList();
     }

@@ -51,7 +51,7 @@ Error: {e.Message}");
         Console.WriteLine($"  {solution}");
         await SolutionRestore.Run(solution);
 
-        var solutionDirectory = Directory.GetParent(solution).FullName;
+        var solutionDirectory = Directory.GetParent(solution)!.FullName;
         foreach (var project in FileSystem.EnumerateFiles(solutionDirectory, "*.csproj"))
         {
             Console.WriteLine($"    {project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar)}");
@@ -76,6 +76,6 @@ Error: {e.Message}");
         Console.WriteLine($"      {package} : {version}");
         return DotnetStarter.StartDotNet(
             arguments: $"add {project} package {package} -v {version}",
-            directory: Directory.GetParent(project).FullName);
+            directory: Directory.GetParent(project)!.FullName);
     }
 }

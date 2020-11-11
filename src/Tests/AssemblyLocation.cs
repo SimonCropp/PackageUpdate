@@ -6,13 +6,7 @@ static class AssemblyLocation
     {
         var assembly = typeof(AssemblyLocation).Assembly;
 
-        var path = assembly.CodeBase!
-            .Replace("file:///", "")
-            .Replace("file://", "")
-            .Replace(@"file:\\\", "")
-            .Replace(@"file:\\", "");
-
-        CurrentDirectory = Path.GetDirectoryName(path)!;
+        CurrentDirectory = Path.GetDirectoryName(assembly.Location)!;
     }
 
     public static string CurrentDirectory;
