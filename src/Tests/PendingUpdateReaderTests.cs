@@ -58,7 +58,7 @@ Project `Tests` has the following updates to its packages
         return VerifyUpdates(input);
     }
 
-    Task VerifyUpdates(string input)
+    static Task VerifyUpdates(string input)
     {
         var lines = input.Lines().ToList();
         return Verifier.Verify(
