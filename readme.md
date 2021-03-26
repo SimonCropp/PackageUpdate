@@ -14,17 +14,6 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
 
 Support is available via a [Tidelift Subscription](https://tidelift.com/subscription/pkg/nuget-packageupdate?utm_source=nuget-packageupdate&utm_medium=referral&utm_campaign=enterprise).
 
-<!-- toc -->
-## Contents
-
-  * [Installation](#installation)
-  * [Usage](#usage)
-    * [Arguments](#arguments)
-    * [Behavior](#behavior)
-  * [PackageUpdateIgnores](#packageupdateignores)
-  * [Add to Windows Explorer](#add-to-windows-explorer)
-  * [Security contact information](#security-contact-information)<!-- endToc -->
-
 
 ## NuGet package
 
