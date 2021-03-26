@@ -7,8 +7,6 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
 
 Support is available via a [Tidelift Subscription](https://tidelift.com/subscription/pkg/nuget-packageupdate?utm_source=nuget-packageupdate&utm_medium=referral&utm_campaign=enterprise).
 
-toc
-
 
 ## NuGet package
 
