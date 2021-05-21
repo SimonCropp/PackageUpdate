@@ -5,8 +5,6 @@
 
 A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) that updates packages for all solutions in a directory.
 
-Support is available via a [Tidelift Subscription](https://tidelift.com/subscription/pkg/nuget-packageupdate?utm_source=nuget-packageupdate&utm_medium=referral&utm_campaign=enterprise).
-
 
 ## NuGet package
 
@@ -90,10 +88,6 @@ Use [context-menu.reg](/src/context-menu.reg) to add PackageUpdate to the Window
 
 snippet: context-menu.reg
 
-
-## Security contact information
-
-To report a security vulnerability, use the [Tidelift security contact](https://tidelift.com/security). Tidelift will coordinate the fix and disclosure.
 
 
 ## Icon

@@ -12,8 +12,6 @@ To change this file edit the source file and then run MarkdownSnippets.
 
 A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) that updates packages for all solutions in a directory.
 
-Support is available via a [Tidelift Subscription](https://tidelift.com/subscription/pkg/nuget-packageupdate?utm_source=nuget-packageupdate&utm_medium=referral&utm_campaign=enterprise).
-
 
 ## NuGet package
 
@@ -115,10 +113,6 @@ Windows Registry Editor Version 5.00
 <sup><a href='/src/context-menu.reg#L1-L13' title='Snippet source file'>snippet source</a> | <a href='#snippet-context-menu.reg' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-
-## Security contact information
-
-To report a security vulnerability, use the [Tidelift security contact](https://tidelift.com/security). Tidelift will coordinate the fix and disclosure.
 
 
 ## Icon
