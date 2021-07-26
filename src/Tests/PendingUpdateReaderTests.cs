@@ -41,6 +41,23 @@ Project `Tests` has the following updates to its packages
     }
 
     [Fact]
+    public Task SameVersion()
+    {
+        var input = @"
+The following sources were used:
+   https://api.nuget.org/v3/index.json
+   C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+
+Project `Tests` has the following updates to its packages
+   [net472]:
+   Top-level Package      Requested   Resolved   Latest
+   > HtmlAgilityPack      1.11.6      1.11.6     1.11.6
+
+";
+        return VerifyUpdates(input);
+    }
+
+    [Fact]
     public Task PreRelease()
     {
         var input = @"

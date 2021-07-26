@@ -15,7 +15,9 @@ static class PendingUpdateReader
 
     public static IEnumerable<PendingUpdate> ParseWithUpdates(List<string> lines)
     {
-        return ParseUpdates(lines).Where(StableOrWithPreRelease);
+        return ParseUpdates(lines)
+            .Where(x => x.Latest != x.Resolved)
+            .Where(StableOrWithPreRelease);
     }
 
     static bool StableOrWithPreRelease(PendingUpdate update)
@@ -38,18 +40,17 @@ static class PendingUpdateReader
                 continue;
             }
 
-            var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var package = split[1];
-            var resolved = split[3];
-            var latest = split[4];
-            var isDeprecated = line.EndsWith("(D)");
-            yield return new PendingUpdate
-            (
-                package: package,
-                resolved: resolved,
-                latest: latest,
-                isDeprecated: isDeprecated
-            );
+            yield return ParseLine(line);
         }
+    }
+
+    static PendingUpdate ParseLine(string line)
+    {
+        var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var package = split[1];
+        var resolved = split[3];
+        var latest = split[4];
+        var isDeprecated = line.EndsWith("(D)");
+        return new PendingUpdate(package, resolved, latest, isDeprecated);
     }
 }

@@ -2,7 +2,7 @@
   "profiles": {
     "PackageUpdate": {
       "commandName": "Project",
-      "commandLineArgs": "--target-directory C:\\Code\\EfResultsFilter --package GraphQL"
+      "commandLineArgs": "--target-directory C:\\Code\\LocalDb"
     }
   }
 }
