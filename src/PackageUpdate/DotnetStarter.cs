@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading.Tasks;
-
-static class DotnetStarter
+﻿static class DotnetStarter
 {
     public static async Task<List<string>> StartDotNet(string arguments, string directory)
     {

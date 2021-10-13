@@ -1,7 +1,4 @@
-﻿using System.IO;
-using System.Threading.Tasks;
-
-static class SolutionRestore
+﻿static class SolutionRestore
 {
     public static Task Run(string solution)
     {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-
-static class Program
+﻿static class Program
 {
     static Task Main(string[] args)
     {

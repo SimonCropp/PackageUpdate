@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-static class FileSystem
+﻿static class FileSystem
 {
     public static IEnumerable<string> EnumerateFiles(string directory, string pattern)
     {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using CommandLine;
+﻿using CommandLine;
 
 static class CommandRunner
 {

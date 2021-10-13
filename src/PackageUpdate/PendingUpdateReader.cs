@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-static class PendingUpdateReader
+﻿static class PendingUpdateReader
 {
     public static async Task<List<PendingUpdate>> ReadPendingUpdates(string file)
     {

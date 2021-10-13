@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-
-static class Extensions
+﻿static class Extensions
 {
     public static IEnumerable<string> Lines(this string target)
     {
