@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-public class SolutionRestoreTests
+﻿public class SolutionRestoreTests
 {
     [Fact]
     public Task ThisSolution()

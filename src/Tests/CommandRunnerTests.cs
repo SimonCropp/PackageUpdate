@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-public class CommandRunnerTests
+﻿public class CommandRunnerTests
 {
     string? targetDirectory;
     string? package;

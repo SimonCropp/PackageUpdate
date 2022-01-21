@@ -1,7 +1,4 @@
-﻿using VerifyXunit;
-using Xunit;
-
-[UsesVerify]
+﻿[UsesVerify]
 public class PendingUpdateReaderTests
 {
     [Fact]
@@ -76,7 +73,7 @@ Project `Tests` has the following updates to its packages
     static Task VerifyUpdates(string input)
     {
         var lines = input.Lines().ToList();
-        return Verifier.Verify(
+        return Verify(
             new
             {
                 parsed = PendingUpdateReader.ParseUpdates(lines),

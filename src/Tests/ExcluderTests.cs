@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-public class ExcluderTests
+﻿public class ExcluderTests
 {
     [Fact]
     public void Simple()
