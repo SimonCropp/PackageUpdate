@@ -11,8 +11,7 @@
             return;
         }
 
-        ignores = variable.Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim()).ToList();
+        ignores = variable.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     }
 
     public static bool ShouldExclude(string solution)
