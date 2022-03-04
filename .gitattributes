@@ -3,14 +3,9 @@
 *.xml     -text 
 *.targets -text
 *.txt -text
+.editorconfig -text
+*.sln.DotSettings -text
 
-# Custom for Visual Studio
-*.cs     diff=csharp
-*.sln    merge=union
-*.csproj merge=union
-*.vbproj merge=union
-*.fsproj merge=union
-*.dbproj merge=union
 
 # Denote all files that are truly binary and should not be modified.
 *.dll binary
@@ -19,5 +14,4 @@
 *.ico binary
 *.snk binary
 *.pdb binary
-*.svg binary
 *.approved.* binary
