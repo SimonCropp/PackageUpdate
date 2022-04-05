@@ -7,12 +7,10 @@
         return ParseWithUpdates(lines).ToList();
     }
 
-    public static IEnumerable<PendingUpdate> ParseWithUpdates(List<string> lines)
-    {
-        return ParseUpdates(lines)
+    public static IEnumerable<PendingUpdate> ParseWithUpdates(List<string> lines) =>
+        ParseUpdates(lines)
             .Where(x => x.Latest != x.Resolved)
             .Where(StableOrWithPreRelease);
-    }
 
     static bool StableOrWithPreRelease(PendingUpdate update)
     {
@@ -45,6 +43,6 @@
         var resolved = split[3];
         var latest = split[4];
         var isDeprecated = line.EndsWith("(D)");
-        return new PendingUpdate(package, resolved, latest, isDeprecated);
+        return new(package, resolved, latest, isDeprecated);
     }
 }

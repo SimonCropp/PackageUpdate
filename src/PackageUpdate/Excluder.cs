@@ -7,15 +7,13 @@
         var variable = Environment.GetEnvironmentVariable("PackageUpdateIgnores");
         if (variable == null)
         {
-            ignores = new List<string>();
+            ignores = new();
             return;
         }
 
         ignores = variable.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     }
 
-    public static bool ShouldExclude(string solution)
-    {
-        return ignores.Any(x => solution.Contains(x, StringComparison.OrdinalIgnoreCase));
-    }
+    public static bool ShouldExclude(string solution) =>
+        ignores.Any(x => solution.Contains(x, StringComparison.OrdinalIgnoreCase));
 }

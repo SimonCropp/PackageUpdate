@@ -4,7 +4,7 @@
     {
         using var process = new Process
         {
-            StartInfo = new ProcessStartInfo
+            StartInfo = new()
             {
                 FileName = "dotnet",
                 Arguments = arguments,
@@ -19,7 +19,7 @@
         Console.WriteLine($"    dotnet {arguments}");
         if (!process.WaitForExit(30000))
         {
-            throw new Exception($@"Command: dotnet {arguments}
+            throw new($@"Command: dotnet {arguments}
 Timed out
 WorkingDirectory: {directory}");
         }
@@ -31,7 +31,7 @@ WorkingDirectory: {directory}");
 
         var error = await process.StandardError.ReadToEndAsync();
         var output = await process.StandardOutput.ReadToEndAsync();
-        throw new Exception($@"Command: dotnet {arguments}
+        throw new($@"Command: dotnet {arguments}
 WorkingDirectory: {directory}
 ExitCode: {process.ExitCode}
 Error: {error}
