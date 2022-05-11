@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net5;net6</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
     <ToolCommandName>packageupdate</ToolCommandName>
     <AssemblyName>PackageUpdate</AssemblyName>
     <PackageId>PackageUpdate</PackageId>
