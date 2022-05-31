@@ -1,16 +1,18 @@
-{
+﻿{
   parsed: [
     {
       Package: HtmlAgilityPack,
       Resolved: 1.11.6,
-      Latest: 1.11.7
+      Latest: 1.11.7,
+      IsDeprecated: false
     }
   ],
   withUpdates: [
     {
       Package: HtmlAgilityPack,
       Resolved: 1.11.6,
-      Latest: 1.11.7
+      Latest: 1.11.7,
+      IsDeprecated: false
     }
   ]
 }

@@ -3,8 +3,7 @@
     public static IEnumerable<string> Lines(this string target)
     {
         using var reader = new StringReader(target);
-        string? line;
-        while ((line = reader.ReadLine()) != null)
+        while (reader.ReadLine() is { } line)
         {
             yield return line;
         }
