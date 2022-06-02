@@ -3,7 +3,8 @@
     {
       Package: HtmlAgilityPack,
       Resolved: 1.11.6,
-      Latest: 1.11.6
+      Latest: 1.11.6,
+      IsDeprecated: false
     }
   ],
   withUpdates: []

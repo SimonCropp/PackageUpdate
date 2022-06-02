@@ -2,9 +2,8 @@
 {
     public static async Task<List<string>> ReadLines(this Process process)
     {
-        string? line;
         var list = new List<string>();
-        while ((line = await process.StandardOutput.ReadLineAsync()) != null)
+        while (await process.StandardOutput.ReadLineAsync() is { } line)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
