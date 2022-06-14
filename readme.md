@@ -114,7 +114,6 @@ Windows Registry Editor Version 5.00
 <!-- endSnippet -->
 
 
-
 ## Icon
 
 [Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
