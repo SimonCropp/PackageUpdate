@@ -89,7 +89,6 @@ Use [context-menu.reg](/src/context-menu.reg) to add PackageUpdate to the Window
 snippet: context-menu.reg
 
 
-
 ## Icon
 
 [Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
