@@ -3,7 +3,7 @@
     public static async Task<List<PendingUpdate>> ReadPendingUpdates(string file)
     {
         var directory = Directory.GetParent(file)!.FullName;
-        var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated", directory);
+        var lines = await DotnetStarter.StartDotNet($"list {file} package --outdated --interactive", directory);
         return ParseWithUpdates(lines).ToList();
     }
 

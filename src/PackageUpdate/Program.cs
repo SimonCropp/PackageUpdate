@@ -66,6 +66,6 @@ static Task Update(string project, string package, string version)
 {
     Console.WriteLine($"      {package} : {version}");
     return DotnetStarter.StartDotNet(
-        arguments: $"add {project} package {package} -v {version}",
+        arguments: $"add {project} package {package} -v {version} --interactive",
         directory: Directory.GetParent(project)!.FullName);
 }
