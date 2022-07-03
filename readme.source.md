@@ -89,6 +89,20 @@ Use [context-menu.reg](/src/context-menu.reg) to add PackageUpdate to the Window
 snippet: context-menu.reg
 
 
+## Authenticated feed
+
+To use authenticatyed feed, add the [packageSourceCredentials](https://docs.microsoft.com/en-us/nuget/reference/nuget-config-file#packagesourcecredentials) to the global nuget config:
+
+```xml
+<packageSourceCredentials>
+<feedName>
+    <add key="Username" value="username" />
+    <add key="Password" value="api key" />
+</feedName>
+</packageSourceCredentials>
+```
+
+
 ## Icon
 
 [Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
