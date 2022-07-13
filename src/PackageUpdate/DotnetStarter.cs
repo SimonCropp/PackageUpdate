@@ -17,7 +17,7 @@
         };
         process.Start();
         Console.WriteLine($"    dotnet {arguments}");
-        if (!process.WaitForExit(30000))
+        if (!process.WaitForExit(60000))
         {
             throw new($@"Command: dotnet {arguments}
 Timed out
