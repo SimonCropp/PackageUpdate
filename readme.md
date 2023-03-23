@@ -122,7 +122,7 @@ To use authenticatyed feed, add the [packageSourceCredentials](https://docs.micr
 <packageSourceCredentials>
 <feedName>
     <add key="Username" value="username" />
-    <add key="ClearTextPassword" value="api key" />
+    <add key="Password" value="api key" />
 </feedName>
 </packageSourceCredentials>
 ```
