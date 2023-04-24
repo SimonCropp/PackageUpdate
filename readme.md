@@ -116,13 +116,13 @@ Windows Registry Editor Version 5.00
 
 ## Authenticated feed
 
-To use authenticatyed feed, add the [packageSourceCredentials](https://docs.microsoft.com/en-us/nuget/reference/nuget-config-file#packagesourcecredentials) to the global nuget config:
+To use authenticated feed, add the [packageSourceCredentials](https://docs.microsoft.com/en-us/nuget/reference/nuget-config-file#packagesourcecredentials) to the global nuget config:
 
 ```xml
 <packageSourceCredentials>
 <feedName>
     <add key="Username" value="username" />
-    <add key="Password" value="api key" />
+    <add key="ClearTextPassword" value="api key" />
 </feedName>
 </packageSourceCredentials>
 ```
