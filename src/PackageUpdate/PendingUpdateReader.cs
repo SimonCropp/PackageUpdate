@@ -9,7 +9,7 @@
 
     public static IEnumerable<PendingUpdate> ParseWithUpdates(List<string> lines) =>
         ParseUpdates(lines)
-            .Where(x => x.Latest != x.Resolved)
+            .Where(_ => _.Latest != _.Resolved)
             .Where(StableOrWithPreRelease);
 
     static bool StableOrWithPreRelease(PendingUpdate update)
