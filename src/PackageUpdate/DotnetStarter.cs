@@ -1,6 +1,6 @@
 ﻿static class DotnetStarter
 {
-    public static async Task<List<string>> StartDotNet(string arguments, string directory)
+    public static async Task<List<string>> StartDotNet(string arguments, string directory, int timeout)
     {
         using var process = new Process
         {
@@ -17,7 +17,7 @@
         };
         process.Start();
         Console.WriteLine($"    dotnet {arguments}");
-        if (!process.WaitForExit(300000))
+        if (!process.WaitForExit(timeout))
         {
             throw new($@"Command: dotnet {arguments}
 Timed out

@@ -72,7 +72,8 @@ static Task Update(string project, string package, string version)
     Console.WriteLine($"      {package} : {version}");
     return DotnetStarter.StartDotNet(
         arguments: $"add {project} package {package} -v {version}",
-        directory: Directory.GetParent(project)!.FullName);
+        directory: Directory.GetParent(project)!.FullName,
+        timeout: 100000);
 }
 
 
@@ -81,5 +82,6 @@ static Task Build(string solution)
     Console.WriteLine($"    Build {solution}");
     return DotnetStarter.StartDotNet(
         arguments: $"build {solution} --no-restore",
-        directory: Directory.GetParent(solution)!.FullName);
+        directory: Directory.GetParent(solution)!.FullName,
+        timeout: 20000);
 }
