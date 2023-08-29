@@ -2,6 +2,7 @@
 {
     string? targetDirectory;
     string? package;
+    bool build;
 
     [Fact]
     public async Task Empty()
@@ -9,6 +10,7 @@
         await CommandRunner.RunCommand(Capture);
         Assert.Equal(Environment.CurrentDirectory, targetDirectory);
         Assert.Null(package);
+        Assert.False(build);
     }
 
     [Fact]
@@ -36,6 +38,22 @@
     }
 
     [Fact]
+    public async Task BuildShort()
+    {
+        await CommandRunner.RunCommand(Capture, "-b");
+        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
+        Assert.True(build);
+    }
+
+    [Fact]
+    public async Task BuildLong()
+    {
+        await CommandRunner.RunCommand(Capture, "--build");
+        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
+        Assert.True(build);
+    }
+
+    [Fact]
     public async Task PackageShort()
     {
         await CommandRunner.RunCommand(Capture, "-p", "packageName");
@@ -59,10 +77,11 @@
         Assert.Equal("packageName", package);
     }
 
-    Task Capture(string targetDirectory, string? package)
+    Task Capture(string targetDirectory, string? package, bool build)
     {
         this.targetDirectory = targetDirectory;
         this.package = package;
+        this.build = build;
         return Task.CompletedTask;
     }
 }

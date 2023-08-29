@@ -1,6 +1,6 @@
 ﻿await CommandRunner.RunCommand(Inner, args);
 
-static async Task Inner(string targetDirectory, string? package)
+static async Task Inner(string targetDirectory, string? package, bool build)
 {
     Console.WriteLine($"TargetDirectory: {targetDirectory}");
     Console.WriteLine($"Package: {package}");
@@ -12,15 +12,15 @@ static async Task Inner(string targetDirectory, string? package)
 
     foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.sln"))
     {
-        await TryProcessSolution(solution, package);
+        await TryProcessSolution(solution, package, build);
     }
 }
 
-static async Task TryProcessSolution(string solution, string? package)
+static async Task TryProcessSolution(string solution, string? package, bool build)
 {
     try
     {
-        await ProcessSolution(solution, package);
+        await ProcessSolution(solution, package, build);
     }
     catch (Exception e)
     {
@@ -31,7 +31,7 @@ Error: {e.Message}");
     }
 }
 
-static async Task ProcessSolution(string solution, string? package)
+static async Task ProcessSolution(string solution, string? package, bool build)
 {
     if (Excluder.ShouldExclude(solution))
     {
@@ -60,6 +60,11 @@ static async Task ProcessSolution(string solution, string? package)
             }
         }
     }
+
+    if (build)
+    {
+        await Build(solution);
+    }
 }
 
 static Task Update(string project, string package, string version)
@@ -68,4 +73,13 @@ static Task Update(string project, string package, string version)
     return DotnetStarter.StartDotNet(
         arguments: $"add {project} package {package} -v {version}",
         directory: Directory.GetParent(project)!.FullName);
+}
+
+
+static Task Build(string solution)
+{
+    Console.WriteLine($"    Build {solution}");
+    return DotnetStarter.StartDotNet(
+        arguments: $"build {solution}",
+        directory: Directory.GetParent(solution)!.FullName);
 }
