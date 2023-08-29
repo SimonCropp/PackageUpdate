@@ -80,6 +80,6 @@ static Task Build(string solution)
 {
     Console.WriteLine($"    Build {solution}");
     return DotnetStarter.StartDotNet(
-        arguments: $"build {solution}",
+        arguments: $"build {solution} --no-restore",
         directory: Directory.GetParent(solution)!.FullName);
 }
