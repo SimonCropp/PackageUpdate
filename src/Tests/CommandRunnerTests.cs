@@ -72,9 +72,10 @@
     [Fact]
     public async Task All()
     {
-        await CommandRunner.RunCommand(Capture, "--target-directory", "dir", "--package", "packageName");
+        await CommandRunner.RunCommand(Capture, "--target-directory", "dir", "--package", "packageName", "--build");
         Assert.Equal(Path.GetFullPath("dir"), targetDirectory);
         Assert.Equal("packageName", package);
+        Assert.True(build);
     }
 
     Task Capture(string targetDirectory, string? package, bool build)
