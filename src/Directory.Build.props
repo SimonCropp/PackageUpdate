@@ -2,6 +2,7 @@
 <Project>
   <PropertyGroup>
     <Version>3.2.1</Version>
+    <LangVersion>preview</LangVersion>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <Description>Updates NuGet packages for all solutions in a directory.</Description>
   </PropertyGroup>
