@@ -25,8 +25,11 @@ static async Task TryProcessSolution(string solution, string? package, bool buil
     catch (Exception e)
     {
         Console.ForegroundColor = ConsoleColor.DarkRed;
-        Console.WriteLine($@"Failed to process solution: {solution}.
-Error: {e.Message}");
+        Console.WriteLine(
+            $"""
+             Failed to process solution: {solution}.
+             Error: {e.Message}
+             """);
         Console.ResetColor();
     }
 }

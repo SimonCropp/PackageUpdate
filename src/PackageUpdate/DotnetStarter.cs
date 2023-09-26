@@ -19,9 +19,12 @@
         Console.WriteLine($"    dotnet {arguments}");
         if (!process.WaitForExit(timeout))
         {
-            throw new($@"Command: dotnet {arguments}
-Timed out
-WorkingDirectory: {directory}");
+            throw new(
+                $"""
+                 Command: dotnet {arguments}
+                 Timed out
+                 WorkingDirectory: {directory}
+                 """);
         }
 
         if (process.ExitCode == 0)
@@ -31,10 +34,13 @@ WorkingDirectory: {directory}");
 
         var error = await process.StandardError.ReadToEndAsync();
         var output = await process.StandardOutput.ReadToEndAsync();
-        throw new($@"Command: dotnet {arguments}
-WorkingDirectory: {directory}
-ExitCode: {process.ExitCode}
-Error: {error}
-Output: {output}");
+        throw new(
+            $"""
+             Command: dotnet {arguments}
+             WorkingDirectory: {directory}
+             ExitCode: {process.ExitCode}
+             Error: {error}
+             Output: {output}
+             """);
     }
 }
