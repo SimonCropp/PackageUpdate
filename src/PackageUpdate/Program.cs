@@ -46,7 +46,7 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     await SolutionRestore.Run(solution);
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
-    foreach (var project in FileSystem.EnumerateFiles(solutionDirectory, "*.csproj"))
+    foreach (var project in ProjectFiles(solutionDirectory))
     {
         Console.WriteLine($"    {project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar)}");
         foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
@@ -88,3 +88,7 @@ static Task Build(string solution)
         directory: Directory.GetParent(solution)!.FullName,
         timeout: 20000);
 }
+
+static IEnumerable<string> ProjectFiles(string solutionDirectory) =>
+    FileSystem.EnumerateFiles(solutionDirectory, "*.csproj")
+        .Concat(FileSystem.EnumerateFiles(solutionDirectory, "*.fsproj"));
