@@ -70,13 +70,27 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
 }
 
-static Task Update(string project, string package, string version)
+static async Task Update(string project, string package, string version)
 {
     Console.WriteLine($"      {package} : {version}");
-    return DotnetStarter.StartDotNet(
-        arguments: $"add {project} package {package} -v {version}",
-        directory: Directory.GetParent(project)!.FullName,
-        timeout: 100000);
+    try
+    {
+        await DotnetStarter.StartDotNet(
+            arguments: $"add {project} package {package} -v {version}",
+            directory: Directory.GetParent(project)!.FullName,
+            timeout: 100000);
+    }
+    catch (Exception exception)
+    {
+        if (exception.Message.Contains(" is incompatible with "))
+        {
+            Console.WriteLine($"      Skipping due to incompatible TFM. {package} : {version}");
+            Console.WriteLine(exception.Message);
+            return;
+        }
+
+        throw;
+    }
 }
 
 
