@@ -1,0 +1,13 @@
+Windows Registry Editor Version 5.00
+[HKEY_CLASSES_ROOT\Directory\Shell]
+@="none"
+[HKEY_CLASSES_ROOT\Directory\shell\packageupdate]
+"MUIVerb"="run packageupdate"
+"Position"="bottom"
+[HKEY_CLASSES_ROOT\Directory\Background\shell\packageupdate]
+"MUIVerb"="run packageupdate"
+"Position"="bottom"
+[HKEY_CLASSES_ROOT\Directory\shell\packageupdate\command]
+@="cmd.exe /c packageupdate \"%V\" -b"
+[HKEY_CLASSES_ROOT\Directory\Background\shell\packageupdate\command]
+@="cmd.exe /c packageupdate \"%V\" -b"
