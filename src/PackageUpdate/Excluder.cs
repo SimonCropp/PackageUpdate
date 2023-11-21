@@ -15,5 +15,5 @@
     }
 
     public static bool ShouldExclude(string solution) =>
-        ignores.Any(x => solution.Contains(x, StringComparison.OrdinalIgnoreCase));
+        ignores.Any(_ => solution.Contains(_, StringComparison.OrdinalIgnoreCase));
 }
