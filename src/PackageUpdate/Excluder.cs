@@ -7,7 +7,7 @@
         var variable = Environment.GetEnvironmentVariable("PackageUpdateIgnores");
         if (variable == null)
         {
-            ignores = new();
+            ignores = [];
             return;
         }
 
