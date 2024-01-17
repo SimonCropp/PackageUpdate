@@ -1,5 +1,4 @@
-﻿[UsesVerify]
-public class PendingUpdateReaderTests
+﻿public class PendingUpdateReaderTests
 {
     [Fact]
     public Task Deprecated()
