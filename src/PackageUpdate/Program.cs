@@ -14,6 +14,18 @@ static async Task Inner(string targetDirectory, string? package, bool build)
     {
         await TryProcessSolution(solution, package, build);
     }
+
+    await Shutdown();
+}
+
+
+static Task Shutdown()
+{
+    Console.WriteLine("Shutdown dotnet build");
+    return DotnetStarter.StartDotNet(
+        arguments: "build build-server shutdown",
+        directory: Environment.CurrentDirectory,
+        timeout: 20000);
 }
 
 static async Task TryProcessSolution(string solution, string? package, bool build)
@@ -98,7 +110,7 @@ static Task Build(string solution)
 {
     Console.WriteLine($"    Build {solution}");
     return DotnetStarter.StartDotNet(
-        arguments: $"build {solution} --no-restore",
+        arguments: $"build {solution} --no-restore --nologo",
         directory: Directory.GetParent(solution)!.FullName,
         timeout: 20000);
 }
