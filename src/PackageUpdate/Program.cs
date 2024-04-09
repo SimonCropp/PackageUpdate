@@ -23,7 +23,7 @@ static Task Shutdown()
 {
     Console.WriteLine("Shutdown dotnet build");
     return DotnetStarter.StartDotNet(
-        arguments: "build build-server shutdown",
+        arguments: "build-server shutdown",
         directory: Environment.CurrentDirectory,
         timeout: 20000);
 }
