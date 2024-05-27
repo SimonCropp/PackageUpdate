@@ -18,7 +18,6 @@ static async Task Inner(string targetDirectory, string? package, bool build)
     await Shutdown();
 }
 
-
 static Task Shutdown()
 {
     Console.WriteLine("Shutdown dotnet build");
