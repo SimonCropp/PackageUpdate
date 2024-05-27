@@ -29,7 +29,7 @@
         }
         catch (UnauthorizedAccessException)
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
     }
 
@@ -41,7 +41,7 @@
         }
         catch (UnauthorizedAccessException)
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
     }
 }
