@@ -57,22 +57,16 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     await SolutionRestore.Run(solution);
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
-    foreach (var project in ProjectFiles(solutionDirectory))
-    {
-        Console.WriteLine($"    {project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar)}");
-        foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-        {
-            if (package == null)
-            {
-                await Update(project, pending.Package, pending.Latest);
-                continue;
-            }
+    var projects = ProjectFiles(solutionDirectory);
 
-            if (string.Equals(package, pending.Package, StringComparison.OrdinalIgnoreCase))
-            {
-                await Update(project, pending.Package, pending.Latest);
-            }
-        }
+    if (File.Exists(Path.Combine(solutionDirectory, "Directory.Packages.props")))
+    {
+        Console.WriteLine("    Found Directory.Packages.props to processing only central packages");
+        await UpdateCentral(package, projects, solutionDirectory);
+    }
+    else
+    {
+        await Update(package, projects, solutionDirectory);
     }
 
     if (build)
@@ -81,7 +75,79 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
 }
 
-static async Task Update(string project, string package, string version)
+static async Task UpdateCentral(string? targetPackage, IEnumerable<string> projects, string solutionDirectory)
+{
+    if (targetPackage == null)
+    {
+        var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var project in projects)
+        {
+            WriteProject(project, solutionDirectory);
+            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
+            {
+                var package = pending.Package;
+                if (processed.Contains(package))
+                {
+                    Console.WriteLine($"        Skipping {package} since already processed");
+                    continue;
+                }
+
+                await Add(project, package, pending.Latest);
+                processed.Add(package);
+            }
+        }
+    }
+    else
+    {
+        foreach (var project in projects)
+        {
+            WriteProject(project, solutionDirectory);
+            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
+            {
+                if (!string.Equals(targetPackage, pending.Package, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                await Add(project, pending.Package, pending.Latest);
+                return;
+            }
+        }
+    }
+}
+
+static async Task Update(string? package, IEnumerable<string> projects, string solutionDirectory)
+{
+    if (package == null)
+    {
+        foreach (var project in projects)
+        {
+            WriteProject(project, solutionDirectory);
+            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
+            {
+                await Add(project, pending.Package, pending.Latest);
+            }
+        }
+    }
+    else
+    {
+        foreach (var project in projects)
+        {
+            WriteProject(project, solutionDirectory);
+            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
+            {
+                if (!string.Equals(package, pending.Package, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                await Add(project, pending.Package, pending.Latest);
+            }
+        }
+    }
+}
+
+static async Task Add(string project, string package, string version)
 {
     Console.WriteLine($"      {package} : {version}");
     try
@@ -95,7 +161,7 @@ static async Task Update(string project, string package, string version)
     {
         if (exception.Message.Contains(" is incompatible with "))
         {
-            Console.WriteLine($"      Skipping due to incompatible TFM. {package} : {version}");
+            Console.WriteLine($"    Skipping due to incompatible TFM. {package} : {version}");
             Console.WriteLine(exception.Message);
             return;
         }
@@ -117,3 +183,6 @@ static Task Build(string solution)
 static IEnumerable<string> ProjectFiles(string solutionDirectory) =>
     FileSystem.EnumerateFiles(solutionDirectory, "*.csproj")
         .Concat(FileSystem.EnumerateFiles(solutionDirectory, "*.fsproj"));
+
+static void WriteProject(string project, string solutionDirectory) =>
+    Console.WriteLine($"    {project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar)}");
