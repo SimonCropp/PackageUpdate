@@ -177,7 +177,7 @@ static Task Build(string solution)
     return DotnetStarter.StartDotNet(
         arguments: $"build {solution} --no-restore --nologo",
         directory: Directory.GetParent(solution)!.FullName,
-        timeout: 20000);
+        timeout: 300000);
 }
 
 static IEnumerable<string> ProjectFiles(string solutionDirectory) =>
