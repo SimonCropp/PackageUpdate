@@ -157,19 +157,12 @@ static async Task Add(string project, string package, string version)
             directory: Directory.GetParent(project)!.FullName,
             timeout: 100000);
     }
-    catch (Exception exception)
+    catch (Exception exception) when (exception.Message.Contains(" is incompatible with "))
     {
-        if (exception.Message.Contains(" is incompatible with "))
-        {
-            Console.WriteLine($"    Skipping due to incompatible TFM. {package} : {version}");
-            Console.WriteLine(exception.Message);
-            return;
-        }
-
-        throw;
+        Console.WriteLine($"    Skipping due to incompatible TFM. {package} : {version}");
+        Console.WriteLine(exception.Message);
     }
 }
-
 
 static Task Build(string solution)
 {
