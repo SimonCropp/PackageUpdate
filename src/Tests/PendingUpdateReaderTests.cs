@@ -17,6 +17,21 @@
     }
 
     [Fact]
+    public Task Not_found_at_the_sources()
+    {
+        var input = """
+                    The following sources were used:
+                       https://api.nuget.org/v3/index.json
+
+                    Project `Tests` has the following updates to its packages
+                       [net8.0]:
+                       Top-level Package      Requested      Resolved       Latest
+                       > xunit.v3             0.3.0-pre.18   0.4.0-pre.20   Not found at the sources
+                    """;
+        return VerifyUpdates(input);
+    }
+
+    [Fact]
     public Task Simple()
     {
         var input = """
