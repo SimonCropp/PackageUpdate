@@ -41,11 +41,21 @@
 
     static PendingUpdate ParseLine(string line)
     {
-        var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var split = line.Split(' ',5, StringSplitOptions.RemoveEmptyEntries);
         var package = split[1];
         var resolved = split[3];
         var latest = split[4];
-        var isDeprecated = line.EndsWith("(D)");
+        var isDeprecated = latest.EndsWith("(D)");
+        if (isDeprecated)
+        {
+            latest = latest[..^4];
+        }
+
+        if (latest == "Not found at the sources")
+        {
+            latest = resolved;
+        }
+
         return new(package, resolved, latest, isDeprecated);
     }
 }

@@ -1,0 +1,11 @@
+﻿{
+  parsed: [
+    {
+      Package: xunit.v3,
+      Resolved: 0.4.0-pre.20,
+      Latest: 0.4.0-pre.20,
+      IsDeprecated: false
+    }
+  ],
+  withUpdates: []
+}
