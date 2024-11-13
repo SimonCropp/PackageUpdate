@@ -71,6 +71,19 @@ packageupdate --package packageName
 ```
 
 
+#### Build
+
+Build the solution after the update 
+
+```ps
+packageupdate -b
+```
+
+```ps
+packageupdate --build
+```
+
+
 ### Behavior
 
  * Recursively scan the target directory for all directories containing a `.sln` file.
