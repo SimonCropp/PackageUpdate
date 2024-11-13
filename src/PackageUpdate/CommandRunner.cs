@@ -1,6 +1,4 @@
-﻿using CommandLine;
-
-static class CommandRunner
+﻿static class CommandRunner
 {
     public static Task RunCommand(Invoke invoke, params string[] args)
     {
