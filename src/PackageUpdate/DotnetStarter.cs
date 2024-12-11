@@ -17,6 +17,12 @@
         };
         process.Start();
         Console.WriteLine($"    dotnet {arguments}");
+
+        if (timeout == 0)
+        {
+            return [];
+        }
+
         if (!process.WaitForExit(timeout))
         {
             throw new(
