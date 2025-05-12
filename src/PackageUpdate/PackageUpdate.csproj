@@ -14,5 +14,6 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Sbom.Targets" PrivateAssets="all" />
   </ItemGroup>
 </Project>
