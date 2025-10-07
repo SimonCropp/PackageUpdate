@@ -15,6 +15,11 @@ static async Task Inner(string targetDirectory, string? package, bool build)
         await TryProcessSolution(solution, package, build);
     }
 
+    foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.slnx"))
+    {
+        await TryProcessSolution(solution, package, build);
+    }
+
     await Shutdown();
 }
 
