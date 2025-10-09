@@ -3,7 +3,7 @@
     [Fact]
     public Task ThisSolution()
     {
-        var file = Path.Combine(GitRepoDirectoryFinder.Find(), "src", "PackageUpdate.sln");
+        var file = Path.Combine(GitRepoDirectoryFinder.Find(), "src", "PackageUpdate.slnx");
         return SolutionRestore.Run(file);
     }
 }
