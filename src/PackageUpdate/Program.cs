@@ -66,7 +66,7 @@ static async Task ProcessSolution(string solution, string? package, bool build)
 
     if (File.Exists(Path.Combine(solutionDirectory, "Directory.Packages.props")))
     {
-        Console.WriteLine("    Found Directory.Packages.props to processing only central packages");
+        Console.WriteLine("    Found Directory.Packages.props. Processing only central packages");
         await UpdateCentral(package, projects, solutionDirectory);
     }
     else
