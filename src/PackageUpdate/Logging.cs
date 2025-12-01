@@ -16,7 +16,4 @@ static class Logging
             retainedFileCountLimit: 10);
         Log.Logger = configuration.CreateLogger();
     }
-
-    public static void OpenDirectory() =>
-        ExplorerLauncher.OpenDirectory(LogsDirectory);
 }
