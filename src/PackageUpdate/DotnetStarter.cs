@@ -16,7 +16,7 @@
             }
         };
         process.Start();
-        Console.WriteLine($"    dotnet {arguments}");
+        Log.Information("    dotnet {Arguments}", arguments);
 
         if (timeout == 0)
         {

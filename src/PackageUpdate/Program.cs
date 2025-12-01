@@ -1,21 +1,22 @@
-﻿await CommandRunner.RunCommand(Inner, args);
+﻿Logging.Init();
+await CommandRunner.RunCommand(Inner, args);
 
-static async Task Inner(string targetDirectory, string? package, bool build)
+static async Task Inner(string directory, string? package, bool build)
 {
-    Console.WriteLine($"TargetDirectory: {targetDirectory}");
-    Console.WriteLine($"Package: {package}");
-    if (!Directory.Exists(targetDirectory))
+    Log.Information("TargetDirectory: {TargetDirectory}", directory);
+    Log.Information("Package: {Package}", package);
+    if (!Directory.Exists(directory))
     {
-        Console.WriteLine($"Target directory does not exist: {targetDirectory}");
+        Log.Information("Target directory does not exist: {TargetDirectory}", directory);
         Environment.Exit(1);
     }
 
-    foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.sln"))
+    foreach (var solution in FileSystem.EnumerateFiles(directory, "*.sln"))
     {
         await TryProcessSolution(solution, package, build);
     }
 
-    foreach (var solution in FileSystem.EnumerateFiles(targetDirectory, "*.slnx"))
+    foreach (var solution in FileSystem.EnumerateFiles(directory, "*.slnx"))
     {
         await TryProcessSolution(solution, package, build);
     }
@@ -25,7 +26,7 @@ static async Task Inner(string targetDirectory, string? package, bool build)
 
 static Task Shutdown()
 {
-    Console.WriteLine("Shutdown dotnet build");
+    Log.Information("Shutdown dotnet build");
     return DotnetStarter.StartDotNet(
         arguments: "build-server shutdown",
         directory: Environment.CurrentDirectory,
@@ -40,13 +41,11 @@ static async Task TryProcessSolution(string solution, string? package, bool buil
     }
     catch (Exception e)
     {
-        Console.ForegroundColor = ConsoleColor.DarkRed;
-        Console.WriteLine(
-            $"""
-             Failed to process solution: {solution}.
-             Error: {e.Message}
-             """);
-        Console.ResetColor();
+        Log.Error(
+            """
+            Failed to process solution: {Solution}.
+            Error: {EMessage}
+            """, solution, e.Message);
     }
 }
 
@@ -54,11 +53,11 @@ static async Task ProcessSolution(string solution, string? package, bool build)
 {
     if (Excluder.ShouldExclude(solution))
     {
-        Console.WriteLine($"  Exclude: {solution}");
+        Log.Information("  Exclude: {Solution}", solution);
         return;
     }
 
-    Console.WriteLine($"  {solution}");
+    Log.Information("  {Solution}", solution);
     await SolutionRestore.Run(solution);
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
@@ -66,7 +65,7 @@ static async Task ProcessSolution(string solution, string? package, bool build)
 
     if (File.Exists(Path.Combine(solutionDirectory, "Directory.Packages.props")))
     {
-        Console.WriteLine("    Found Directory.Packages.props. Processing only central packages");
+        Log.Information("    Found Directory.Packages.props. Processing only central packages");
         await UpdateCentral(package, projects, solutionDirectory);
     }
     else
@@ -93,7 +92,7 @@ static async Task UpdateCentral(string? targetPackage, IEnumerable<string> proje
                 var package = pending.Package;
                 if (processed.Contains(package))
                 {
-                    Console.WriteLine($"        Skipping {package} since already processed");
+                    Log.Information("        Skipping {Package} since already processed", package);
                     continue;
                 }
 
@@ -154,7 +153,7 @@ static async Task Update(string? package, IEnumerable<string> projects, string s
 
 static async Task Add(string project, string package, string version)
 {
-    Console.WriteLine($"      {package} : {version}");
+    Log.Information("      {Package} : {Version}", package, version);
     try
     {
         await DotnetStarter.StartDotNet(
@@ -164,14 +163,13 @@ static async Task Add(string project, string package, string version)
     }
     catch (Exception exception) when (exception.Message.Contains(" is incompatible with "))
     {
-        Console.WriteLine($"    Skipping due to incompatible TFM. {package} : {version}");
-        Console.WriteLine(exception.Message);
+        Log.Error(exception,"    Skipping due to incompatible TFM. {Package} : {Version}", package, version);
     }
 }
 
 static Task Build(string solution)
 {
-    Console.WriteLine($"    Build {solution}");
+    Log.Information("    Build {Solution}", solution);
     return DotnetStarter.StartDotNet(
         arguments: $"build {solution} --no-restore --nologo",
         directory: Directory.GetParent(solution)!.FullName,
@@ -183,4 +181,4 @@ static IEnumerable<string> ProjectFiles(string solutionDirectory) =>
         .Concat(FileSystem.EnumerateFiles(solutionDirectory, "*.fsproj"));
 
 static void WriteProject(string project, string solutionDirectory) =>
-    Console.WriteLine($"    {project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar)}");
+    Log.Information("    {Trim}", project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar));

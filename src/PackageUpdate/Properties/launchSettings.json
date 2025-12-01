@@ -2,7 +2,7 @@
   "profiles": {
     "PackageUpdate": {
       "commandName": "Project",
-      "commandLineArgs": "--target-directory D:\\Code\\VerifyTests\\Verify.MailMessage"
+      "commandLineArgs": "--target-directory D:\\Code\\VerifyTests\\Verify"
     }
   }
 }
