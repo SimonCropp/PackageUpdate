@@ -79,6 +79,7 @@
     static XmlWriterSettings xmlSettings = new()
     {
         OmitXmlDeclaration = true,
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
         Indent = true,
         IndentChars = "  ",
         Async = true
