@@ -78,6 +78,15 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
 }
 
+static Task Build(string solution)
+{
+    Log.Information("    Build {Solution}", solution);
+    return DotnetStarter.StartDotNet(
+        arguments: $"build {solution} --no-restore --nologo",
+        directory: Directory.GetParent(solution)!.FullName,
+        timeout: 0);
+}
+
 static async Task UpdateCentral(string? targetPackage, IEnumerable<string> projects, string solutionDirectory)
 {
     if (targetPackage == null)
