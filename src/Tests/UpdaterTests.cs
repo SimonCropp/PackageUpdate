@@ -5,17 +5,18 @@
     [Fact]
     public async Task UpdateAllPackages()
     {
-        var content = """
-                      <Project>
-                        <PropertyGroup>
-                          <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                        </PropertyGroup>
-                        <ItemGroup>
-                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                          <PackageVersion Include="NUnit" Version="3.13.0" />
-                        </ItemGroup>
-                      </Project>
-                      """;
+        var content =
+            """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -28,17 +29,18 @@
     [Fact]
     public async Task UpdateSinglePackage()
     {
-        var content = """
-                      <Project>
-                        <PropertyGroup>
-                          <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                        </PropertyGroup>
-                        <ItemGroup>
-                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                          <PackageVersion Include="NUnit" Version="3.13.0" />
-                        </ItemGroup>
-                      </Project>
-                      """;
+        var content =
+            """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -51,14 +53,15 @@
     [Fact]
     public async Task UpdateSinglePackage_CaseInsensitive()
     {
-        var content = """
-                      <Project>
-                        <ItemGroup>
-                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                          <PackageVersion Include="NUnit" Version="3.13.0" />
-                        </ItemGroup>
-                      </Project>
-                      """;
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -71,13 +74,14 @@
     [Fact]
     public async Task UpdatePackageNotFound()
     {
-        var content = """
-                      <Project>
-                        <ItemGroup>
-                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                        </ItemGroup>
-                      </Project>
-                      """;
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -92,19 +96,20 @@
     [Fact]
     public async Task PreservesFormatting()
     {
-        var content = """
-                      <Project>
-                        <!-- This is a comment -->
-                        <PropertyGroup>
-                          <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                        </PropertyGroup>
+        var content =
+            """
+            <Project>
+              <!-- This is a comment -->
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+              </PropertyGroup>
 
-                        <ItemGroup>
-                          <!-- Testing packages -->
-                          <PackageVersion Include="NUnit" Version="3.13.0" />
-                        </ItemGroup>
-                      </Project>
-                      """;
+              <ItemGroup>
+                <!-- Testing packages -->
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -120,14 +125,15 @@
     [Fact]
     public async Task SkipsInvalidVersions()
     {
-        var content = """
-                      <Project>
-                        <ItemGroup>
-                          <PackageVersion Include="ValidPackage" Version="1.0.0" />
-                          <PackageVersion Include="InvalidPackage" Version="not-a-version" />
-                        </ItemGroup>
-                      </Project>
-                      """;
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="ValidPackage" Version="1.0.0" />
+                <PackageVersion Include="InvalidPackage" Version="not-a-version" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -252,23 +258,25 @@
     [Fact]
     public async Task UsesLocalNuGetConfig()
     {
-        var nugetConfig = """
-                          <?xml version="1.0" encoding="utf-8"?>
-                          <configuration>
-                            <packageSources>
-                              <clear />
-                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-                            </packageSources>
-                          </configuration>
-                          """;
+        var nugetConfig =
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              </packageSources>
+            </configuration>
+            """;
 
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
@@ -288,13 +296,14 @@
     [Fact]
     public async Task WarnsAndReturnsWhenNoNuGetConfig()
     {
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -313,23 +322,25 @@
     [Fact]
     public async Task UsesLocalNuGetConfigInHierarchy()
     {
-        var nugetConfig = """
-                          <?xml version="1.0" encoding="utf-8"?>
-                          <configuration>
-                            <packageSources>
-                              <clear />
-                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-                            </packageSources>
-                          </configuration>
-                          """;
+        var nugetConfig =
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              </packageSources>
+            </configuration>
+            """;
 
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
@@ -349,8 +360,6 @@
     [Fact]
     public async Task GetLatestVersion_IgnoresUnlistedPackages()
     {
-        var cache = new SourceCacheContext();
-
         // YoloDev.Expecto.TestSdk v1.0.0 is unlisted
         // Start from a version before 1.0.0 to see if it skips the unlisted version
         var currentVersion = NuGetVersion.Parse("0.1.0");
@@ -371,23 +380,25 @@
     [Fact]
     public async Task UpdateSkipsUnlistedVersions()
     {
-        var nugetConfig = """
-                          <?xml version="1.0" encoding="utf-8"?>
-                          <configuration>
-                            <packageSources>
-                              <clear />
-                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-                            </packageSources>
-                          </configuration>
-                          """;
+        var nugetConfig =
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              </packageSources>
+            </configuration>
+            """;
 
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.1.0" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
@@ -419,24 +430,26 @@
     [Fact]
     public async Task UpdateRespectsPinnedPackages()
     {
-        var nugetConfig = """
-                          <?xml version="1.0" encoding="utf-8"?>
-                          <configuration>
-                            <packageSources>
-                              <clear />
-                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-                            </packageSources>
-                          </configuration>
-                          """;
+        var nugetConfig =
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              </packageSources>
+            </configuration>
+            """;
 
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
-                           <PackageVersion Include="NUnit" Version="3.13.0" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="true" />
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
@@ -451,7 +464,7 @@
 
         // Pinned package should not be updated
         Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
-        Assert.Contains("Update=\"false\"", result);
+        Assert.Contains("Pinned=\"true\"", result);
 
         // Non-pinned package should be updated
         Assert.DoesNotContain("NUnit\" Version=\"3.13.0\"", result);
@@ -460,14 +473,15 @@
     [Fact]
     public async Task UpdateAllPackagesArePinned()
     {
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
-                           <PackageVersion Include="NUnit" Version="3.13.0" Update="false" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="true" />
+                <PackageVersion Include="NUnit" Version="3.13.0" Pinned="true" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(packages);
 
@@ -478,20 +492,21 @@
         // All packages should remain unchanged
         Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
         Assert.Contains("NUnit\" Version=\"3.13.0\"", result);
-        Assert.Contains("Update=\"false\"", result);
+        Assert.Contains("Pinned=\"true\"", result);
     }
 
     [Fact]
     public async Task UpdateSinglePinnedPackage()
     {
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
-                           <PackageVersion Include="NUnit" Version="3.13.0" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="true" />
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(packages);
 
@@ -502,21 +517,22 @@
 
         // Should still be pinned and not updated
         Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
-        Assert.Contains("Update=\"false\"", result);
+        Assert.Contains("Pinned=\"true\"", result);
     }
 
     [Fact]
     public async Task UpdatePreservesPinAttributeFormat()
     {
-        var packages = """
-                       <Project>
-                         <ItemGroup>
-                           <!-- Important: keep this version locked -->
-                           <PackageVersion Include="System.ValueTuple" Version="4.5.0" Update="false" />
-                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                         </ItemGroup>
-                       </Project>
-                       """;
+        var packages =
+            """
+            <Project>
+              <ItemGroup>
+                <!-- Important: keep this version locked -->
+                <PackageVersion Include="System.ValueTuple" Version="4.5.0" Pinned="true" />
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var tempFile = await TempFile.CreateText(packages);
 
@@ -529,31 +545,33 @@
 
         // Verify pinned package wasn't updated
         Assert.Contains("System.ValueTuple\" Version=\"4.5.0\"", result);
-        Assert.Contains("Update=\"false\"", result);
+        Assert.Contains("Pinned=\"true\"", result);
     }
 
     [Fact]
     public async Task UpdateOnlyUnpinnedPackagesUpdated()
     {
-        var nugetConfig = """
-                          <?xml version="1.0" encoding="utf-8"?>
-                          <configuration>
-                            <packageSources>
-                              <clear />
-                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-                            </packageSources>
-                          </configuration>
-                          """;
+        var nugetConfig =
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              </packageSources>
+            </configuration>
+            """;
 
-        var directoryPackages = """
-                                <Project>
-                                  <ItemGroup>
-                                    <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
-                                    <PackageVersion Include="NUnit" Version="3.13.0" Update="false" />
-                                    <PackageVersion Include="xunit" Version="2.4.0" />
-                                  </ItemGroup>
-                                </Project>
-                                """;
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="true" />
+                <PackageVersion Include="NUnit" Version="3.13.0" Pinned="true" />
+                <PackageVersion Include="xunit" Version="2.4.0" />
+              </ItemGroup>
+            </Project>
+            """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
@@ -572,22 +590,22 @@
             {
                 Id = element.Attribute("Include")?.Value,
                 Version = element.Attribute("Version")?.Value,
-                Update = element.Attribute("Update")?.Value
+                Pinned = element.Attribute("Pinned")?.Value
             })
             .ToList();
 
         // Pinned packages unchanged
         var newtonsoft = packages.First(_ => _.Id == "Newtonsoft.Json");
         Assert.Equal("12.0.1", newtonsoft.Version);
-        Assert.Equal("false", newtonsoft.Update);
+        Assert.Equal("true", newtonsoft.Pinned);
 
         var nunit = packages.First(_ => _.Id == "NUnit");
         Assert.Equal("3.13.0", nunit.Version);
-        Assert.Equal("false", nunit.Update);
+        Assert.Equal("true", nunit.Pinned);
 
         // Unpinned package updated
         var xunit = packages.First(_ => _.Id == "xunit");
         Assert.NotEqual("2.4.0", xunit.Version);
-        Assert.Null(xunit.Update);
+        Assert.Null(xunit.Pinned);
     }
 }

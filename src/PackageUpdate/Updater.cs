@@ -1,7 +1,5 @@
 ﻿public static class Updater
 {
-    static XPlatMachineWideSetting machineSettings = new();
-
     public static async Task Update(
         SourceCacheContext cache,
         string directoryPackagesPropsPath,
@@ -10,46 +8,37 @@
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
         // Load the XML document
-        var doc = XDocument.Load(directoryPackagesPropsPath);
+        var xml = XDocument.Load(directoryPackagesPropsPath);
 
         // Read current package versions
-        var packageVersions = doc.Descendants("PackageVersion")
+        var packageVersions = xml.Descendants("PackageVersion")
             .Select(element => new
             {
                 Element = element,
-                PackageId = element.Attribute("Include")?.Value,
+                Package = element.Attribute("Include")?.Value,
                 CurrentVersion = element.Attribute("Version")?.Value,
-                ShouldUpdate = element.Attribute("Update")?.Value != "false"
+                Pinned = element.Attribute("Pinned")?.Value == "true"
             })
-            .Where(_ => _.PackageId != null &&
+            .Where(_ => _.Package != null &&
                         _.CurrentVersion != null &&
-                        _.ShouldUpdate)
+                        !_.Pinned)
             .ToList();
 
         // Filter to specific package if requested
         if (!string.IsNullOrEmpty(packageName))
         {
             packageVersions = packageVersions
-                .Where(_ => string.Equals(_.PackageId, packageName, StringComparison.OrdinalIgnoreCase))
+                .Where(_ => string.Equals(_.Package, packageName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             if (packageVersions.Count == 0)
             {
-                Log.Warning("Package {PackageName} not found in {FilePath}", packageName, directoryPackagesPropsPath);
+                Log.Warning("Package {Package} not found in {FilePath}", packageName, directoryPackagesPropsPath);
                 return;
             }
         }
 
-        // Set up NuGet sources
-        var settings = Settings.LoadDefaultSettings(
-            root: directory,
-            configFileName: null,
-            machineWideSettings: machineSettings);
-
-        var sourceProvider = new PackageSourceProvider(settings);
-        var sources = sourceProvider.LoadPackageSources()
-            .Where(_ => _.IsEnabled)
-            .ToList();
+        var sources = PackageSourceReader.Read(directory);
 
         // Update each package
         foreach (var package in packageVersions)
@@ -60,7 +49,7 @@
             }
 
             var latestMetadata = await GetLatestVersion(
-                package.PackageId!,
+                package.Package!,
                 currentVersion,
                 sources,
                 cache);
@@ -79,12 +68,13 @@
 
             // Update the Version attribute
             package.Element.SetAttributeValue("Version", latestVersion.ToString());
-            Log.Information("Updated {PackageId}: {NuGetVersion} -> {LatestVersion}", package.PackageId, currentVersion, latestVersion);
+            Log.Information("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
         }
 
         await using var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings);
-        await doc.SaveAsync(writer, Cancel.None);
+        await xml.SaveAsync(writer, Cancel.None);
     }
+
 
     static XmlWriterSettings xmlSettings = new()
     {
@@ -104,12 +94,9 @@
 
         foreach (var source in sources)
         {
-            var repository = Repository.Factory.GetCoreV3(source);
+            var (repository, metadataResource) = await RepositoryReader.Read(source);
 
             var condidates = await GetCondidates(package, currentVersion, cache, repository);
-
-            // Check each candidate version to see if it's listed
-            var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>();
 
             foreach (var candidate in condidates)
             {
@@ -139,13 +126,13 @@
         return latestMetadata;
     }
 
-    static async Task<List<NuGetVersion>> GetCondidates(string packageId, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
+    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
     {
         // Use FindPackageByIdResource to efficiently get version list
         var findResource = await repository.GetResourceAsync<FindPackageByIdResource>();
 
         var versions = await findResource.GetAllVersionsAsync(
-            packageId,
+            package,
             cache,
             SerilogNuGetLogger.Instance,
             Cancel.None);
