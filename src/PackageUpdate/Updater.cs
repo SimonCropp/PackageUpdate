@@ -2,7 +2,7 @@
 {
     public static async Task Update(
         string directoryPackagesPropsPath,
-        string? packageName = null)
+        string? packageName)
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
@@ -81,9 +81,17 @@
             Log.Information("Updated {PackageId}: {NuGetVersion} -> {LatestVersion}", package.PackageId, currentVersion, latestVersion);
         }
 
-        // Save the updated file
-        doc.Save(directoryPackagesPropsPath);
+        await using var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings);
+        await doc.SaveAsync(writer, Cancel.None);
     }
+
+    static XmlWriterSettings xmlSettings = new()
+    {
+        OmitXmlDeclaration = true,
+        Indent = true,
+        IndentChars = "  ",
+        Async = true
+    };
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
         string packageId,

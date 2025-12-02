@@ -17,7 +17,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(tempFile.Path);
+        await Updater.Update(tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
         await Verify(result);
@@ -112,7 +112,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(tempFile.Path);
+        await Updater.Update(tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -135,7 +135,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(tempFile.Path);
+        await Updater.Update(tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -143,13 +143,11 @@
         Assert.Contains("not-a-version", result);
     }
 
-    static List<PackageSource> GetTestSources() =>
-        [new("https://api.nuget.org/v3/index.json")];
+    static List<PackageSource> sources = [new("https://api.nuget.org/v3/index.json")];
 
     [Fact]
     public async Task GetLatestVersion_StableToStable()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
         var currentVersion = NuGetVersion.Parse("12.0.1");
 
@@ -167,7 +165,6 @@
     [Fact]
     public async Task GetLatestVersion_PreReleaseToPreRelease()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
         var currentVersion = NuGetVersion.Parse("1.0.0-beta.1");
 
@@ -184,7 +181,6 @@
     [Fact]
     public async Task GetLatestVersion_DoesNotDowngradeStableToPreRelease()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
         var currentVersion = NuGetVersion.Parse("13.0.1");
 
@@ -203,7 +199,6 @@
     [Fact]
     public async Task GetLatestVersion_PackageNotFound()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
         var currentVersion = NuGetVersion.Parse("1.0.0");
 
@@ -219,7 +214,6 @@
     [Fact]
     public async Task GetLatestVersion_AlreadyLatest()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
 
         // Use a very high version number
@@ -237,7 +231,6 @@
     [Fact]
     public async Task GetLatestVersion_ReturnsMetadata()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
         var currentVersion = NuGetVersion.Parse("12.0.1");
 
@@ -288,7 +281,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(packagesPath);
+        await Updater.Update(packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
 
@@ -313,7 +306,7 @@
         await File.WriteAllTextAsync(packagesPath, packages);
 
         // Should not throw, just log warning and return
-        await Updater.Update(packagesPath);
+        await Updater.Update(packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
 
@@ -349,7 +342,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(directoryPath, packages);
 
-        await Updater.Update(directoryPath);
+        await Updater.Update(directoryPath, null);
 
         var result = await File.ReadAllTextAsync(directoryPath);
 
@@ -360,7 +353,6 @@
     [Fact]
     public async Task GetLatestVersion_IgnoresUnlistedPackages()
     {
-        var sources = GetTestSources();
         var cache = new SourceCacheContext();
 
         // YoloDev.Expecto.TestSdk v1.0.0 is unlisted
@@ -408,7 +400,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(packagesPath);
+        await Updater.Update(packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
         var doc = XDocument.Parse(result);
@@ -457,7 +449,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(packagesPath);
+        await Updater.Update(packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
 
@@ -483,7 +475,7 @@
 
         using var tempFile = await TempFile.CreateText(packages);
 
-        await Updater.Update(tempFile.Path);
+        await Updater.Update(tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -534,7 +526,7 @@
 
         using var tempFile = await TempFile.CreateText(packages);
 
-        await Updater.Update(tempFile.Path);
+        await Updater.Update(tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -576,7 +568,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, directoryPackages);
 
-        await Updater.Update(packagesPath);
+        await Updater.Update(packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
         var doc = XDocument.Parse(result);

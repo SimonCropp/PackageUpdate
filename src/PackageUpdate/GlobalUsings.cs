@@ -1,4 +1,5 @@
 ﻿global using System.Reflection;
+global using System.Xml;
 global using System.Xml.Linq;
 global using CommandLine;
 global using NuGet.Configuration;
