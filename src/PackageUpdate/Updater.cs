@@ -84,13 +84,14 @@ public static class Updater
         // Save the updated file
         doc.Save(directoryPackagesPropsPath);
     }
+
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
         string packageId,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
         SourceCacheContext cache)
     {
-        NuGetVersion? latestVersion = null;
+        IPackageSearchMetadata? latestMetadata = null;
 
         foreach (var source in sources)
         {
@@ -105,44 +106,41 @@ public static class Updater
                 SerilogNuGetLogger.Instance,
                 Cancel.None);
 
-            var sourceLatest = versions
+            var candidateVersions = versions
                 .Where(v => ShouldConsiderVersion(v, currentVersion))
-                .MaxBy(v => v);
+                .OrderByDescending(v => v)
+                .ToList();
 
-            if (sourceLatest == null ||
-                (latestVersion != null && sourceLatest <= latestVersion))
-            {
-                continue;
-            }
-
-            latestVersion = sourceLatest;
-        }
-
-        if (latestVersion == null)
-        {
-            return null;
-        }
-
-        // Only get metadata for the specific latest version we found
-        foreach (var source in sources)
-        {
-            var repository = Repository.Factory.GetCoreV3(source);
+            // Check each candidate version to see if it's listed
             var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>();
 
-            var metadata = await metadataResource.GetMetadataAsync(
-                new PackageIdentity(packageId, latestVersion),
-                cache,
-                SerilogNuGetLogger.Instance,
-                Cancel.None);
-
-            if (metadata != null)
+            foreach (var candidateVersion in candidateVersions)
             {
-                return metadata;
+                var metadata = await metadataResource.GetMetadataAsync(
+                    new(packageId, candidateVersion),
+                    cache,
+                    SerilogNuGetLogger.Instance,
+                    Cancel.None);
+
+                // Skip unlisted packages
+                if (metadata is not {IsListed: true})
+                {
+                    continue;
+                }
+
+                // Found a listed version - check if it's better than what we have
+                if (latestMetadata == null ||
+                    candidateVersion > latestMetadata.Identity.Version)
+                {
+                    latestMetadata = metadata;
+                    break; // Found the best version from this source
+                }
             }
         }
 
-        return null;
+        return latestMetadata;
     }
+
     static bool ShouldConsiderVersion(NuGetVersion candidate, NuGetVersion current)
     {
         // If current is stable, only consider stable or newer versions

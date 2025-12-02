@@ -1,8 +1,4 @@
-﻿using NuGet.Configuration;
-using NuGet.Protocol.Core.Types;
-using NuGet.Versioning;
-
-public class UpdaterTests
+﻿public class UpdaterTests
 {
     [Fact]
     public async Task UpdateAllPackages()
@@ -359,5 +355,76 @@ public class UpdaterTests
 
         // Verify the package was updated using the local config merged with hierarchy
         Assert.DoesNotContain("Version=\"12.0.1\"", result);
+    }
+
+    [Fact]
+    public async Task GetLatestVersion_IgnoresUnlistedPackages()
+    {
+        var sources = GetTestSources();
+        var cache = new SourceCacheContext();
+
+        // YoloDev.Expecto.TestSdk v1.0.0 is unlisted
+        // Start from a version before 1.0.0 to see if it skips the unlisted version
+        var currentVersion = NuGetVersion.Parse("0.1.0");
+
+        var result = await Updater.GetLatestVersion(
+            "YoloDev.Expecto.TestSdk",
+            currentVersion,
+            sources,
+            cache);
+
+        // Should find a listed version, skipping 1.0.0 (unlisted)
+        Assert.NotNull(result);
+        Assert.True(result.IsListed, "Returned package version should be listed");
+        Assert.NotEqual("1.0.0", result.Identity.Version.ToString());
+        Assert.True(result.Identity.Version > currentVersion);
+    }
+
+    [Fact]
+    public async Task UpdateSkipsUnlistedVersions()
+    {
+        var nugetConfig = """
+                          <?xml version="1.0" encoding="utf-8"?>
+                          <configuration>
+                            <packageSources>
+                              <clear />
+                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+                            </packageSources>
+                          </configuration>
+                          """;
+
+        var directoryPackages = """
+                                <Project>
+                                  <ItemGroup>
+                                    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.1.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """;
+
+        using var directory = new TempDirectory();
+        var nugetConfigPath = Path.Combine(directory, "nuget.config");
+        var directoryPackagesPath = Path.Combine(directory, "Directory.Packages.props");
+
+        await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
+        await File.WriteAllTextAsync(directoryPackagesPath, directoryPackages);
+
+        await Updater.Update(directoryPackagesPath);
+
+        var result = await File.ReadAllTextAsync(directoryPackagesPath);
+        var doc = XDocument.Parse(result);
+
+        var packageVersion = doc.Descendants("PackageVersion")
+            .FirstOrDefault(e => e.Attribute("Include")?.Value == "YoloDev.Expecto.TestSdk");
+
+        Assert.NotNull(packageVersion);
+
+        var versionAttr = packageVersion.Attribute("Version")?.Value;
+
+        // Should have updated, but NOT to the unlisted 1.0.0
+        Assert.NotEqual("0.1.0", versionAttr);
+        Assert.NotEqual("1.0.0", versionAttr);
+
+        Assert.True(NuGetVersion.TryParse(versionAttr, out var updatedVersion));
+        Assert.True(updatedVersion > NuGetVersion.Parse("0.1.0"));
     }
 }
