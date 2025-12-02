@@ -334,24 +334,24 @@
                           </configuration>
                           """;
 
-        var directoryPackages = """
-                                <Project>
-                                  <ItemGroup>
-                                    <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                                  </ItemGroup>
-                                </Project>
-                                """;
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                         </ItemGroup>
+                       </Project>
+                       """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
-        var directoryPackagesPath = Path.Combine(directory, "Directory.Packages.props");
+        var directoryPath = Path.Combine(directory, "Directory.Packages.props");
 
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
-        await File.WriteAllTextAsync(directoryPackagesPath, directoryPackages);
+        await File.WriteAllTextAsync(directoryPath, packages);
 
-        await Updater.Update(directoryPackagesPath);
+        await Updater.Update(directoryPath);
 
-        var result = await File.ReadAllTextAsync(directoryPackagesPath);
+        var result = await File.ReadAllTextAsync(directoryPath);
 
         // Verify the package was updated using the local config merged with hierarchy
         Assert.DoesNotContain("Version=\"12.0.1\"", result);
@@ -393,24 +393,24 @@
                           </configuration>
                           """;
 
-        var directoryPackages = """
-                                <Project>
-                                  <ItemGroup>
-                                    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.1.0" />
-                                  </ItemGroup>
-                                </Project>
-                                """;
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.1.0" />
+                         </ItemGroup>
+                       </Project>
+                       """;
 
         using var directory = new TempDirectory();
         var nugetConfigPath = Path.Combine(directory, "nuget.config");
-        var directoryPackagesPath = Path.Combine(directory, "Directory.Packages.props");
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
 
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
-        await File.WriteAllTextAsync(directoryPackagesPath, directoryPackages);
+        await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(directoryPackagesPath);
+        await Updater.Update(packagesPath);
 
-        var result = await File.ReadAllTextAsync(directoryPackagesPath);
+        var result = await File.ReadAllTextAsync(packagesPath);
         var doc = XDocument.Parse(result);
 
         var packageVersion = doc.Descendants("PackageVersion")
@@ -426,5 +426,182 @@
 
         Assert.True(NuGetVersion.TryParse(versionAttr, out var updatedVersion));
         Assert.True(updatedVersion > NuGetVersion.Parse("0.1.0"));
+    }
+
+    [Fact]
+    public async Task UpdateRespectsPinnedPackages()
+    {
+        var nugetConfig = """
+                          <?xml version="1.0" encoding="utf-8"?>
+                          <configuration>
+                            <packageSources>
+                              <clear />
+                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+                            </packageSources>
+                          </configuration>
+                          """;
+
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
+                           <PackageVersion Include="NUnit" Version="3.13.0" />
+                         </ItemGroup>
+                       </Project>
+                       """;
+
+        using var directory = new TempDirectory();
+        var nugetConfigPath = Path.Combine(directory, "nuget.config");
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+
+        await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
+        await File.WriteAllTextAsync(packagesPath, packages);
+
+        await Updater.Update(packagesPath);
+
+        var result = await File.ReadAllTextAsync(packagesPath);
+
+        // Pinned package should not be updated
+        Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
+        Assert.Contains("Update=\"false\"", result);
+
+        // Non-pinned package should be updated
+        Assert.DoesNotContain("NUnit\" Version=\"3.13.0\"", result);
+    }
+
+    [Fact]
+    public async Task UpdateAllPackagesArePinned()
+    {
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
+                           <PackageVersion Include="NUnit" Version="3.13.0" Update="false" />
+                         </ItemGroup>
+                       </Project>
+                       """;
+
+        using var tempFile = await TempFile.CreateText(packages);
+
+        await Updater.Update(tempFile.Path);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+
+        // All packages should remain unchanged
+        Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
+        Assert.Contains("NUnit\" Version=\"3.13.0\"", result);
+        Assert.Contains("Update=\"false\"", result);
+    }
+
+    [Fact]
+    public async Task UpdateSinglePinnedPackage()
+    {
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
+                           <PackageVersion Include="NUnit" Version="3.13.0" />
+                         </ItemGroup>
+                       </Project>
+                       """;
+
+        using var tempFile = await TempFile.CreateText(packages);
+
+        // Try to update the pinned package specifically
+        await Updater.Update(
+            tempFile.Path,
+            "Newtonsoft.Json");
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+
+        // Should still be pinned and not updated
+        Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
+        Assert.Contains("Update=\"false\"", result);
+    }
+
+    [Fact]
+    public async Task UpdatePreservesPinAttributeFormat()
+    {
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <!-- Important: keep this version locked -->
+                           <PackageVersion Include="System.ValueTuple" Version="4.5.0" Update="false" />
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                         </ItemGroup>
+                       </Project>
+                       """;
+
+        using var tempFile = await TempFile.CreateText(packages);
+
+        await Updater.Update(tempFile.Path);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+
+        // Verify comment is preserved
+        Assert.Contains("<!-- Important: keep this version locked -->", result);
+
+        // Verify pinned package wasn't updated
+        Assert.Contains("System.ValueTuple\" Version=\"4.5.0\"", result);
+        Assert.Contains("Update=\"false\"", result);
+    }
+
+    [Fact]
+    public async Task UpdateOnlyUnpinnedPackagesUpdated()
+    {
+        var nugetConfig = """
+                          <?xml version="1.0" encoding="utf-8"?>
+                          <configuration>
+                            <packageSources>
+                              <clear />
+                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+                            </packageSources>
+                          </configuration>
+                          """;
+
+        var directoryPackages = """
+                                <Project>
+                                  <ItemGroup>
+                                    <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Update="false" />
+                                    <PackageVersion Include="NUnit" Version="3.13.0" Update="false" />
+                                    <PackageVersion Include="xunit" Version="2.4.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """;
+
+        using var directory = new TempDirectory();
+        var nugetConfigPath = Path.Combine(directory, "nuget.config");
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+
+        await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
+        await File.WriteAllTextAsync(packagesPath, directoryPackages);
+
+        await Updater.Update(packagesPath);
+
+        var result = await File.ReadAllTextAsync(packagesPath);
+        var doc = XDocument.Parse(result);
+
+        var packages = doc.Descendants("PackageVersion")
+            .Select(element => new
+            {
+                Id = element.Attribute("Include")?.Value,
+                Version = element.Attribute("Version")?.Value,
+                Update = element.Attribute("Update")?.Value
+            })
+            .ToList();
+
+        // Pinned packages unchanged
+        var newtonsoft = packages.First(_ => _.Id == "Newtonsoft.Json");
+        Assert.Equal("12.0.1", newtonsoft.Version);
+        Assert.Equal("false", newtonsoft.Update);
+
+        var nunit = packages.First(_ => _.Id == "NUnit");
+        Assert.Equal("3.13.0", nunit.Version);
+        Assert.Equal("false", nunit.Update);
+
+        // Unpinned package updated
+        var xunit = packages.First(_ => _.Id == "xunit");
+        Assert.NotEqual("2.4.0", xunit.Version);
+        Assert.Null(xunit.Update);
     }
 }

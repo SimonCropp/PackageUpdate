@@ -1,6 +1,4 @@
-﻿using NuGet.Packaging.Core;
-
-public static class Updater
+﻿public static class Updater
 {
     public static async Task Update(
         string directoryPackagesPropsPath,
@@ -17,10 +15,12 @@ public static class Updater
             {
                 Element = element,
                 PackageId = element.Attribute("Include")?.Value,
-                CurrentVersion = element.Attribute("Version")?.Value
+                CurrentVersion = element.Attribute("Version")?.Value,
+                ShouldUpdate = element.Attribute("Update")?.Value != "false"
             })
             .Where(_ => _.PackageId != null &&
-                        _.CurrentVersion != null)
+                        _.CurrentVersion != null &&
+                        _.ShouldUpdate)
             .ToList();
 
         // Filter to specific package if requested

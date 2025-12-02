@@ -118,6 +118,164 @@ To use authenticated feed, add the [packageSourceCredentials](https://docs.micro
 ```
 
 
+## Package Version Pinning
+
+
+### Overview
+
+prevent specific packages from being automatically updated by adding the `Update="false"` attribute to package entries in the `Directory.Packages.props` file.
+
+
+### Usage
+
+
+#### Pin a Single Package
+
+```xml
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="System.ValueTuple" Version="4.5.0" Update="false" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>
+```
+
+In this example:
+
+- `System.ValueTuple` will remain at version `4.5.0` and will **not** be updated
+- `Newtonsoft.Json` will be updated to the latest version when running the updater
+
+
+#### Pin Multiple Packages
+
+```xml
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="System.ValueTuple" Version="4.5.0" Update="false" />
+    <PackageVersion Include="Microsoft.AspNetCore.App" Version="6.0.0" Update="false" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>
+```
+
+
+#### Document Why a Package is Pinned
+
+It's good practice to add comments explaining why a package is pinned:
+
+```xml
+<Project>
+  <ItemGroup>
+    <!-- Pinned: v4.6+ breaks compatibility with .NET Framework 4.6.1 -->
+    <PackageVersion Include="System.ValueTuple" Version="4.5.0" Update="false" />
+    
+    <!-- Pinned: Newer versions require EF Core migration -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="6.0.10" Update="false" />
+    
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>
+```
+
+
+### Behavior
+
+
+#### When Running Update All Packages
+
+```bash
+dotnet run -- update
+```
+
+- All packages **without** `Update="false"` will be checked for updates
+- Pinned packages are skipped entirely
+
+
+#### When Running Update Specific Package
+
+```bash
+dotnet run -- update --package System.ValueTuple
+```
+
+- Even when explicitly targeting a pinned package, it will **not** be updated
+- The pin is always respected, regardless of how the updater is invoked
+
+
+### Common Use Cases
+
+
+#### 1. Breaking Changes
+
+Pin packages when newer versions introduce breaking changes you're not ready to handle:
+
+```xml
+<PackageVersion Include="AutoMapper" Version="10.1.1" Update="false" />
+```
+
+
+#### 2. Framework Constraints
+
+Pin packages that have specific framework version requirements:
+
+```xml
+<!-- Required for .NET Framework 4.7.2 compatibility -->
+<PackageVersion Include="System.Memory" Version="4.5.4" Update="false" />
+```
+
+
+#### 3. Security Fixes
+
+Pin to a specific patched version while waiting for a proper migration:
+
+```xml
+<!-- Pinned to security patch - v8.x requires major refactoring -->
+<PackageVersion Include="IdentityServer4" Version="4.1.2" Update="false" />
+```
+
+
+#### 4. Performance Regressions
+
+Pin when a newer version causes performance issues:
+
+```xml
+<!-- v6.x has known performance regression in our scenario -->
+<PackageVersion Include="Dapper" Version="2.0.123" Update="false" />
+```
+
+
+#### 5. Vendor Dependencies
+
+Pin packages that must match versions used by third-party SDKs:
+
+```xml
+<!-- Must match version used by Acme.ThirdPartySDK -->
+<PackageVersion Include="Newtonsoft.Json" Version="12.0.3" Update="false" />
+```
+
+
+### Unpinning a Package
+
+To allow a package to be updated again, remove the `Update="false"` attribute:
+
+```xml
+<!-- Before -->
+<PackageVersion Include="System.ValueTuple" Version="4.5.0" Update="false" />
+
+<!-- After -->
+<PackageVersion Include="System.ValueTuple" Version="4.5.0" />
+```
+
+The next time you run the updater, it will update to the latest version.
+
+
+### Technical Details
+
+- The `Update` attribute is a custom attribute used by this updater tool
+- It has no effect on NuGet's normal package resolution
+- The attribute follows MSBuild conventions (similar to how `Update` works in project files)
+- Comments and formatting around pinned packages are preserved during updates
+
+
 ## Icon
 
 [Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
