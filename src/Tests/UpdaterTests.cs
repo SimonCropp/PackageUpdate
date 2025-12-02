@@ -19,7 +19,7 @@ public class UpdaterTests
             </Project>
             """;
 
-        using var tempFile = TempFile.Create(content);
+        using var tempFile = await TempFile.CreateText(content);
 
         await Updater.Update(tempFile.Path);
 
@@ -42,7 +42,7 @@ public class UpdaterTests
             </Project>
             """;
 
-        using var tempFile = TempFile.Create(content);
+        using var tempFile = await TempFile.CreateText(content);
 
         await Updater.Update(
             tempFile.Path,
@@ -64,7 +64,7 @@ public class UpdaterTests
             </Project>
             """;
 
-        using var tempFile = TempFile.Create(content);
+        using var tempFile = await TempFile.CreateText(content);
 
         await Updater.Update(
             tempFile.Path,
@@ -85,7 +85,7 @@ public class UpdaterTests
             </Project>
             """;
 
-        using var tempFile = TempFile.Create(content);
+        using var tempFile = await TempFile.CreateText(content);
 
         await Updater.Update(
             tempFile.Path,
@@ -114,7 +114,7 @@ public class UpdaterTests
             </Project>
             """;
 
-        using var tempFile = TempFile.Create(content);
+        using var tempFile = await TempFile.CreateText(content);
 
         await Updater.Update(tempFile.Path);
 
@@ -137,7 +137,7 @@ public class UpdaterTests
             </Project>
             """;
 
-        using var tempFile = TempFile.Create(content);
+        using var tempFile = await TempFile.CreateText(content);
 
         await Updater.Update(tempFile.Path);
 

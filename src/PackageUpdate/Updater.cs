@@ -86,7 +86,6 @@ public static class Updater
         List<PackageSource> sources,
         SourceCacheContext cache)
     {
-        IPackageSearchMetadata? latestMetadata = null;
         NuGetVersion? latestVersion = null;
 
         foreach (var source in sources)
