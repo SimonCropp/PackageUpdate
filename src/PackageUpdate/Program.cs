@@ -20,6 +20,17 @@ static async Task Inner(string directory, string? package, bool build)
     {
         await TryProcessSolution(solution, package, build);
     }
+
+    await Shutdown();
+}
+
+static Task Shutdown()
+{
+    Log.Information("Shutdown dotnet build");
+    return DotnetStarter.StartDotNet(
+        arguments: "build-server shutdown",
+        directory: Environment.CurrentDirectory,
+        timeout: 20000);
 }
 
 static async Task TryProcessSolution(string solution, string? package, bool build)
