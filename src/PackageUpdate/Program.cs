@@ -69,7 +69,7 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
     else
     {
-        await Update(package, projects, solutionDirectory);
+        Log.Error("    Directory.Packages.props not found. Only central packages supported. Solution: {Solution}", solution);
     }
 
     if (build)
