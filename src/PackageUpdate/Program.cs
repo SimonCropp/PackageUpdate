@@ -59,11 +59,10 @@ static async Task ProcessSolution(SourceCacheContext cache, string solution, str
     var props = Path.Combine(solutionDirectory, "Directory.Packages.props");
     if (!File.Exists(props))
     {
-        Log.Error("    Directory.Packages.props not found. Only central packages supported. Solution: {Solution}", solution);
+        Log.Error("    Only central packages supported. Skipping: {Solution}", solution);
         return;
     }
 
-    Log.Information("    Found Directory.Packages.props. Processing only central packages");
     await Updater.Update(cache, props, package);
 
     if (build)

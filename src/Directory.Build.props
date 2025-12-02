@@ -1,7 +1,7 @@
 
 <Project>
   <PropertyGroup>
-    <Version>4.0.0-beta.1</Version>
+    <Version>4.0.0-beta.2</Version>
     <LangVersion>preview</LangVersion>
     <NoWarn>NU1608</NoWarn>
     <AssemblyVersion>1.0.0</AssemblyVersion>
