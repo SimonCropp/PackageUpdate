@@ -4,7 +4,11 @@ await CommandRunner.RunCommand(Inner, args);
 static async Task Inner(string directory, string? package, bool build)
 {
     Log.Information("TargetDirectory: {TargetDirectory}", directory);
-    Log.Information("Package: {Package}", package);
+    if (package != null)
+    {
+        Log.Information("Package: {Package}", package);
+    }
+
     if (!Directory.Exists(directory))
     {
         Log.Information("Target directory does not exist: {TargetDirectory}", directory);
@@ -12,12 +16,7 @@ static async Task Inner(string directory, string? package, bool build)
     }
 
     using var cache = new SourceCacheContext();
-    foreach (var solution in FileSystem.EnumerateFiles(directory, "*.sln"))
-    {
-        await TryProcessSolution(cache, solution, package, build);
-    }
-
-    foreach (var solution in FileSystem.EnumerateFiles(directory, "*.slnx"))
+    foreach (var solution in FileSystem.FindSolutions(directory))
     {
         await TryProcessSolution(cache, solution, package, build);
     }

@@ -1,6 +1,19 @@
 ﻿static class FileSystem
 {
-    public static IEnumerable<string> EnumerateFiles(string directory, string pattern)
+    public static IEnumerable<string> FindSolutions(string directory)
+    {
+        foreach (var solution in EnumerateFiles(directory, "*.sln"))
+        {
+            yield return solution;
+        }
+
+        foreach (var solution in EnumerateFiles(directory, "*.slnx"))
+        {
+            yield return solution;
+        }
+    }
+
+    static List<string> EnumerateFiles(string directory, string pattern)
     {
         var allFiles = new List<string>();
 
