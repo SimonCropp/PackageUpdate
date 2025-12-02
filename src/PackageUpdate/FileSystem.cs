@@ -25,7 +25,7 @@
     {
         try
         {
-            return Directory.EnumerateFiles(directory,pattern, SearchOption.TopDirectoryOnly);
+            return Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly);
         }
         catch (UnauthorizedAccessException)
         {
@@ -37,7 +37,7 @@
     {
         try
         {
-            return Directory.EnumerateDirectories(directory,"*", SearchOption.TopDirectoryOnly);
+            return Directory.EnumerateDirectories(directory, "*", SearchOption.TopDirectoryOnly);
         }
         catch (UnauthorizedAccessException)
         {

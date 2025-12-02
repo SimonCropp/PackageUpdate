@@ -1,1 +1,0 @@
-﻿record PendingUpdate(string Package, string Resolved, string Latest, bool IsDeprecated);

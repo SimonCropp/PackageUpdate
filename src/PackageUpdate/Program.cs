@@ -11,45 +11,40 @@ static async Task Inner(string directory, string? package, bool build)
         Environment.Exit(1);
     }
 
+    using var cache = new SourceCacheContext();
     foreach (var solution in FileSystem.EnumerateFiles(directory, "*.sln"))
     {
-        await TryProcessSolution(solution, package, build);
+        await TryProcessSolution(cache, solution, package, build);
     }
 
     foreach (var solution in FileSystem.EnumerateFiles(directory, "*.slnx"))
     {
-        await TryProcessSolution(solution, package, build);
+        await TryProcessSolution(cache, solution, package, build);
     }
 
-    await Shutdown();
+    if (build)
+    {
+        await DotnetStarter.Shutdown();
+    }
 }
 
-static Task Shutdown()
-{
-    Log.Information("Shutdown dotnet build");
-    return DotnetStarter.StartDotNet(
-        arguments: "build-server shutdown",
-        directory: Environment.CurrentDirectory,
-        timeout: 20000);
-}
-
-static async Task TryProcessSolution(string solution, string? package, bool build)
+static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
 {
     try
     {
-        await ProcessSolution(solution, package, build);
+        await ProcessSolution(cache, solution, package, build);
     }
     catch (Exception e)
     {
         Log.Error(
             """
             Failed to process solution: {Solution}.
-            Error: {EMessage}
+            Error: {Message}
             """, solution, e.Message);
     }
 }
 
-static async Task ProcessSolution(string solution, string? package, bool build)
+static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
 {
     if (Excluder.ShouldExclude(solution))
     {
@@ -58,127 +53,21 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
 
     Log.Information("  {Solution}", solution);
-    await SolutionRestore.Run(solution);
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
-    var projects = ProjectFiles(solutionDirectory);
 
-    if (File.Exists(Path.Combine(solutionDirectory, "Directory.Packages.props")))
+    var props = Path.Combine(solutionDirectory, "Directory.Packages.props");
+    if (!File.Exists(props))
     {
-        Log.Information("    Found Directory.Packages.props. Processing only central packages");
-        await UpdateCentral(package, projects, solutionDirectory);
+        Log.Error("    Directory.Packages.props not found. Only central packages supported. Solution: {Solution}", solution);
+        return;
     }
-    else
-    {
-        await Update(package, projects, solutionDirectory);
-    }
+
+    Log.Information("    Found Directory.Packages.props. Processing only central packages");
+    await Updater.Update(cache, props, package);
 
     if (build)
     {
-        await Build(solution);
+        await DotnetStarter.Build(solution);
     }
 }
-
-static async Task UpdateCentral(string? targetPackage, IEnumerable<string> projects, string solutionDirectory)
-{
-    if (targetPackage == null)
-    {
-        var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                var package = pending.Package;
-                if (processed.Contains(package))
-                {
-                    Log.Information("        Skipping {Package} since already processed", package);
-                    continue;
-                }
-
-                await Add(project, package, pending.Latest);
-                processed.Add(package);
-            }
-        }
-    }
-    else
-    {
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                if (!string.Equals(targetPackage, pending.Package, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                await Add(project, pending.Package, pending.Latest);
-                return;
-            }
-        }
-    }
-}
-
-static async Task Update(string? package, IEnumerable<string> projects, string solutionDirectory)
-{
-    if (package == null)
-    {
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                await Add(project, pending.Package, pending.Latest);
-            }
-        }
-    }
-    else
-    {
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                if (!string.Equals(package, pending.Package, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                await Add(project, pending.Package, pending.Latest);
-            }
-        }
-    }
-}
-
-static async Task Add(string project, string package, string version)
-{
-    Log.Information("      {Package} : {Version}", package, version);
-    try
-    {
-        await DotnetStarter.StartDotNet(
-            arguments: $"add {project} package {package} -v {version}",
-            directory: Directory.GetParent(project)!.FullName,
-            timeout: 100000);
-    }
-    catch (Exception exception) when (exception.Message.Contains(" is incompatible with "))
-    {
-        Log.Error(exception,"    Skipping due to incompatible TFM. {Package} : {Version}", package, version);
-    }
-}
-
-static Task Build(string solution)
-{
-    Log.Information("    Build {Solution}", solution);
-    return DotnetStarter.StartDotNet(
-        arguments: $"build {solution} --no-restore --nologo",
-        directory: Directory.GetParent(solution)!.FullName,
-        timeout: 0);
-}
-
-static IEnumerable<string> ProjectFiles(string solutionDirectory) =>
-    FileSystem.EnumerateFiles(solutionDirectory, "*.csproj")
-        .Concat(FileSystem.EnumerateFiles(solutionDirectory, "*.fsproj"));
-
-static void WriteProject(string project, string solutionDirectory) =>
-    Log.Information("    {Trim}", project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar));

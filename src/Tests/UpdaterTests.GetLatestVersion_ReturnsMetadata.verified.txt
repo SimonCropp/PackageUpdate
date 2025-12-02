@@ -1,0 +1,6 @@
+﻿{
+  Id: Newtonsoft.Json,
+  Version: 13.0.4,
+  HasVersion: true,
+  IsPrerelease: false
+}
