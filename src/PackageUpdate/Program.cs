@@ -58,7 +58,6 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
 
     Log.Information("  {Solution}", solution);
-    await SolutionRestore.Run(solution);
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
     var projects = ProjectFiles(solutionDirectory);
