@@ -39,7 +39,9 @@ static async Task TryProcessSolution(SourceCacheContext cache, string solution, 
             """
             Failed to process solution: {Solution}.
             Error: {Message}
-            """, solution, e.Message);
+            """,
+            solution,
+            e.Message);
     }
 }
 
