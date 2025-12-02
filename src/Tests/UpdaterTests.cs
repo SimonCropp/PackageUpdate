@@ -8,16 +8,16 @@ public class UpdaterTests
     public async Task UpdateAllPackages()
     {
         var content = """
-            <Project>
-              <PropertyGroup>
-                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-              </PropertyGroup>
-              <ItemGroup>
-                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                <PackageVersion Include="NUnit" Version="3.13.0" />
-              </ItemGroup>
-            </Project>
-            """;
+                      <Project>
+                        <PropertyGroup>
+                          <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        </PropertyGroup>
+                        <ItemGroup>
+                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                          <PackageVersion Include="NUnit" Version="3.13.0" />
+                        </ItemGroup>
+                      </Project>
+                      """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -31,16 +31,16 @@ public class UpdaterTests
     public async Task UpdateSinglePackage()
     {
         var content = """
-            <Project>
-              <PropertyGroup>
-                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-              </PropertyGroup>
-              <ItemGroup>
-                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                <PackageVersion Include="NUnit" Version="3.13.0" />
-              </ItemGroup>
-            </Project>
-            """;
+                      <Project>
+                        <PropertyGroup>
+                          <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        </PropertyGroup>
+                        <ItemGroup>
+                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                          <PackageVersion Include="NUnit" Version="3.13.0" />
+                        </ItemGroup>
+                      </Project>
+                      """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -56,13 +56,13 @@ public class UpdaterTests
     public async Task UpdateSinglePackage_CaseInsensitive()
     {
         var content = """
-            <Project>
-              <ItemGroup>
-                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-                <PackageVersion Include="NUnit" Version="3.13.0" />
-              </ItemGroup>
-            </Project>
-            """;
+                      <Project>
+                        <ItemGroup>
+                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                          <PackageVersion Include="NUnit" Version="3.13.0" />
+                        </ItemGroup>
+                      </Project>
+                      """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -78,12 +78,12 @@ public class UpdaterTests
     public async Task UpdatePackageNotFound()
     {
         var content = """
-            <Project>
-              <ItemGroup>
-                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
-              </ItemGroup>
-            </Project>
-            """;
+                      <Project>
+                        <ItemGroup>
+                          <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                        </ItemGroup>
+                      </Project>
+                      """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -101,18 +101,18 @@ public class UpdaterTests
     public async Task PreservesFormatting()
     {
         var content = """
-            <Project>
-              <!-- This is a comment -->
-              <PropertyGroup>
-                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-              </PropertyGroup>
+                      <Project>
+                        <!-- This is a comment -->
+                        <PropertyGroup>
+                          <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        </PropertyGroup>
 
-              <ItemGroup>
-                <!-- Testing packages -->
-                <PackageVersion Include="NUnit" Version="3.13.0" />
-              </ItemGroup>
-            </Project>
-            """;
+                        <ItemGroup>
+                          <!-- Testing packages -->
+                          <PackageVersion Include="NUnit" Version="3.13.0" />
+                        </ItemGroup>
+                      </Project>
+                      """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -129,13 +129,13 @@ public class UpdaterTests
     public async Task SkipsInvalidVersions()
     {
         var content = """
-            <Project>
-              <ItemGroup>
-                <PackageVersion Include="ValidPackage" Version="1.0.0" />
-                <PackageVersion Include="InvalidPackage" Version="not-a-version" />
-              </ItemGroup>
-            </Project>
-            """;
+                      <Project>
+                        <ItemGroup>
+                          <PackageVersion Include="ValidPackage" Version="1.0.0" />
+                          <PackageVersion Include="InvalidPackage" Version="not-a-version" />
+                        </ItemGroup>
+                      </Project>
+                      """;
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -146,6 +146,7 @@ public class UpdaterTests
         // Invalid version should remain unchanged
         Assert.Contains("not-a-version", result);
     }
+
     static List<PackageSource> GetTestSources() =>
         [new("https://api.nuget.org/v3/index.json")];
 
@@ -261,5 +262,102 @@ public class UpdaterTests
         };
 
         await Verify(metadata);
+    }
+
+    [Fact]
+    public async Task UsesLocalNuGetConfig()
+    {
+        var nugetConfig = """
+                          <?xml version="1.0" encoding="utf-8"?>
+                          <configuration>
+                            <packageSources>
+                              <clear />
+                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+                            </packageSources>
+                          </configuration>
+                          """;
+
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                         </ItemGroup>
+                       </Project>
+                       """;
+
+        using var directory = new TempDirectory();
+        var nugetConfigPath = Path.Combine(directory, "nuget.config");
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+
+        await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
+        await File.WriteAllTextAsync(packagesPath, packages);
+
+        await Updater.Update(packagesPath);
+
+        var result = await File.ReadAllTextAsync(packagesPath);
+
+        // Verify the package was updated (should have a newer version than 12.0.1)
+        Assert.DoesNotContain("Version=\"12.0.1\"", result);
+    }
+
+    [Fact]
+    public async Task WarnsAndReturnsWhenNoNuGetConfig()
+    {
+        var packages = """
+                       <Project>
+                         <ItemGroup>
+                           <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                         </ItemGroup>
+                       </Project>
+                       """;
+
+        using var directory = new TempDirectory();
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+
+        await File.WriteAllTextAsync(packagesPath, packages);
+
+        // Should not throw, just log warning and return
+        await Updater.Update(packagesPath);
+
+        var result = await File.ReadAllTextAsync(packagesPath);
+
+        // Verify the package was updated (should have a newer version than 12.0.1)
+        Assert.DoesNotContain("Version=\"12.0.1\"", result);
+    }
+
+    [Fact]
+    public async Task UsesLocalNuGetConfigInHierarchy()
+    {
+        var nugetConfig = """
+                          <?xml version="1.0" encoding="utf-8"?>
+                          <configuration>
+                            <packageSources>
+                              <clear />
+                              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+                            </packageSources>
+                          </configuration>
+                          """;
+
+        var directoryPackages = """
+                                <Project>
+                                  <ItemGroup>
+                                    <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+                                  </ItemGroup>
+                                </Project>
+                                """;
+
+        using var directory = new TempDirectory();
+        var nugetConfigPath = Path.Combine(directory, "nuget.config");
+        var directoryPackagesPath = Path.Combine(directory, "Directory.Packages.props");
+
+        await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
+        await File.WriteAllTextAsync(directoryPackagesPath, directoryPackages);
+
+        await Updater.Update(directoryPackagesPath);
+
+        var result = await File.ReadAllTextAsync(directoryPackagesPath);
+
+        // Verify the package was updated using the local config merged with hierarchy
+        Assert.DoesNotContain("Version=\"12.0.1\"", result);
     }
 }

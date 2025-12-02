@@ -21,7 +21,10 @@ static async Task Inner(string directory, string? package, bool build)
         await TryProcessSolution(solution, package, build);
     }
 
-    await Shutdown();
+    if (build)
+    {
+        await Shutdown();
+    }
 }
 
 static Task Shutdown()

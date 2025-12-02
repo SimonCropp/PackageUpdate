@@ -66,7 +66,7 @@ packageupdate --package packageName
 
 #### Build
 
-Build the solution after the update 
+Build the solution after the update
 
 ```ps
 packageupdate -b

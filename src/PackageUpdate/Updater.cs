@@ -38,7 +38,11 @@ public static class Updater
         }
 
         // Set up NuGet sources
-        var settings = Settings.LoadDefaultSettings(directory);
+        var settings = Settings.LoadDefaultSettings(
+            root: directory,
+            configFileName: null,
+            machineWideSettings: new XPlatMachineWideSetting());
+
         var sourceProvider = new PackageSourceProvider(settings);
         var sources = sourceProvider.LoadPackageSources()
             .Where(_ => _.IsEnabled)
