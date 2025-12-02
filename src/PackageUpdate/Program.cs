@@ -44,7 +44,7 @@ static async Task TryProcessSolution(string solution, string? package, bool buil
         Log.Error(
             """
             Failed to process solution: {Solution}.
-            Error: {EMessage}
+            Error: {Message}
             """, solution, e.Message);
     }
 }
@@ -61,15 +61,15 @@ static async Task ProcessSolution(string solution, string? package, bool build)
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
 
-    if (File.Exists(Path.Combine(solutionDirectory, "Directory.Packages.props")))
-    {
-        Log.Information("    Found Directory.Packages.props. Processing only central packages");
-        await UpdateCentral(package, projects, solutionDirectory);
-    }
-    else
+    var props = Path.Combine(solutionDirectory, "Directory.Packages.props");
+    if (!File.Exists(props))
     {
         Log.Error("    Directory.Packages.props not found. Only central packages supported. Solution: {Solution}", solution);
+        return;
     }
+
+    Log.Information("    Found Directory.Packages.props. Processing only central packages");
+    await Updater.Update(props, package);
 
     if (build)
     {
@@ -84,45 +84,4 @@ static Task Build(string solution)
         arguments: $"build {solution} --no-restore --nologo",
         directory: Directory.GetParent(solution)!.FullName,
         timeout: 0);
-}
-
-static async Task UpdateCentral(string? targetPackage, string solutionDirectory)
-{
-    if (targetPackage == null)
-    {
-        var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                var package = pending.Package;
-                if (processed.Contains(package))
-                {
-                    Log.Information("        Skipping {Package} since already processed", package);
-                    continue;
-                }
-
-                await Add(project, package, pending.Latest);
-                processed.Add(package);
-            }
-        }
-    }
-    else
-    {
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                if (!string.Equals(targetPackage, pending.Package, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                await Add(project, pending.Package, pending.Latest);
-                return;
-            }
-        }
-    }
 }

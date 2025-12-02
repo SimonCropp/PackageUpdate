@@ -1,6 +1,8 @@
-﻿public class DirectoryPackagesPropsUpdater
+﻿public static class Updater
 {
-    public static async Task UpdateDirectoryPackagesProps(string directoryPackagesPropsPath)
+    public static async Task Update(
+        string directoryPackagesPropsPath,
+        string? packageName = null)
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
@@ -18,6 +20,20 @@
             .Where(_ => _.PackageId != null &&
                         _.CurrentVersion != null)
             .ToList();
+
+        // Filter to specific package if requested
+        if (!string.IsNullOrEmpty(packageName))
+        {
+            packageVersions = packageVersions
+                .Where(_ => string.Equals(_.PackageId, packageName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (packageVersions.Count == 0)
+            {
+                Log.Warning("Package {PackageName} not found in {FilePath}", packageName, directoryPackagesPropsPath);
+                return;
+            }
+        }
 
         // Set up NuGet sources
         var settings = Settings.LoadDefaultSettings(directory);
@@ -63,7 +79,7 @@
         doc.Save(directoryPackagesPropsPath);
     }
 
-    static async Task<IPackageSearchMetadata?> GetLatestVersion(
+    public static async Task<IPackageSearchMetadata?> GetLatestVersion(
         string packageId,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
