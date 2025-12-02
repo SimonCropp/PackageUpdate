@@ -1,5 +1,5 @@
-﻿public static class PackageSourceReader{
-
+﻿public static class PackageSourceReader
+{
     static XPlatMachineWideSetting machineSettings = new();
 
     public static List<PackageSource> Read(string directory)

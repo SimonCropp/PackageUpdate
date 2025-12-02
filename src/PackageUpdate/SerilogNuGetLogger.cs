@@ -1,6 +1,3 @@
-using NuGet.Common;
-using Serilog.Events;
-using Serilog.Parsing;
 using ILogger = NuGet.Common.ILogger;
 #pragma warning disable CA2254
 
