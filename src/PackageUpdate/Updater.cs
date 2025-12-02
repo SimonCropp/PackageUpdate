@@ -48,7 +48,7 @@
             .Where(_ => _.IsEnabled)
             .ToList();
 
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext();
 
         // Update each package
         foreach (var package in packageVersions)
@@ -94,7 +94,7 @@
     };
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
-        string packageId,
+        string package,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
         SourceCacheContext cache)
@@ -105,27 +105,15 @@
         {
             var repository = Repository.Factory.GetCoreV3(source);
 
-            // Use FindPackageByIdResource to efficiently get version list
-            var findResource = await repository.GetResourceAsync<FindPackageByIdResource>();
-
-            var versions = await findResource.GetAllVersionsAsync(
-                packageId,
-                cache,
-                SerilogNuGetLogger.Instance,
-                Cancel.None);
-
-            var candidateVersions = versions
-                .Where(v => ShouldConsiderVersion(v, currentVersion))
-                .OrderByDescending(v => v)
-                .ToList();
+            var condidates = await GetCondidates(package, currentVersion, cache, repository);
 
             // Check each candidate version to see if it's listed
             var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>();
 
-            foreach (var candidateVersion in candidateVersions)
+            foreach (var candidate in condidates)
             {
                 var metadata = await metadataResource.GetMetadataAsync(
-                    new(packageId, candidateVersion),
+                    new(package, candidate),
                     cache,
                     SerilogNuGetLogger.Instance,
                     Cancel.None);
@@ -138,15 +126,33 @@
 
                 // Found a listed version - check if it's better than what we have
                 if (latestMetadata == null ||
-                    candidateVersion > latestMetadata.Identity.Version)
+                    candidate > latestMetadata.Identity.Version)
                 {
+                    // Found the best version from this source
                     latestMetadata = metadata;
-                    break; // Found the best version from this source
+                    break;
                 }
             }
         }
 
         return latestMetadata;
+    }
+
+    static async Task<List<NuGetVersion>> GetCondidates(string packageId, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
+    {
+        // Use FindPackageByIdResource to efficiently get version list
+        var findResource = await repository.GetResourceAsync<FindPackageByIdResource>();
+
+        var versions = await findResource.GetAllVersionsAsync(
+            packageId,
+            cache,
+            SerilogNuGetLogger.Instance,
+            Cancel.None);
+
+        return versions
+            .Where(v => ShouldConsiderVersion(v, currentVersion))
+            .OrderByDescending(_ => _)
+            .ToList();
     }
 
     static bool ShouldConsiderVersion(NuGetVersion candidate, NuGetVersion current)
