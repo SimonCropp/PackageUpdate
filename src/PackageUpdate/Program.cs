@@ -11,14 +11,15 @@ static async Task Inner(string directory, string? package, bool build)
         Environment.Exit(1);
     }
 
+    using var cache = new SourceCacheContext();
     foreach (var solution in FileSystem.EnumerateFiles(directory, "*.sln"))
     {
-        await TryProcessSolution(solution, package, build);
+        await TryProcessSolution(cache, solution, package, build);
     }
 
     foreach (var solution in FileSystem.EnumerateFiles(directory, "*.slnx"))
     {
-        await TryProcessSolution(solution, package, build);
+        await TryProcessSolution(cache, solution, package, build);
     }
 
     if (build)
@@ -27,11 +28,11 @@ static async Task Inner(string directory, string? package, bool build)
     }
 }
 
-static async Task TryProcessSolution(string solution, string? package, bool build)
+static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
 {
     try
     {
-        await ProcessSolution(solution, package, build);
+        await ProcessSolution(cache, solution, package, build);
     }
     catch (Exception e)
     {
@@ -43,7 +44,7 @@ static async Task TryProcessSolution(string solution, string? package, bool buil
     }
 }
 
-static async Task ProcessSolution(string solution, string? package, bool build)
+static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
 {
     if (Excluder.ShouldExclude(solution))
     {
@@ -63,7 +64,7 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     }
 
     Log.Information("    Found Directory.Packages.props. Processing only central packages");
-    await Updater.Update(props, package);
+    await Updater.Update(cache, props, package);
 
     if (build)
     {

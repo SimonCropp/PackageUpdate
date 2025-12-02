@@ -1,5 +1,7 @@
 ﻿public class UpdaterTests
 {
+    static SourceCacheContext cache = new();
+
     [Fact]
     public async Task UpdateAllPackages()
     {
@@ -17,7 +19,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(tempFile.Path, null);
+        await Updater.Update(cache, tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
         await Verify(result);
@@ -40,9 +42,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(
-            tempFile.Path,
-            "Newtonsoft.Json");
+        await Updater.Update(cache, tempFile.Path, "Newtonsoft.Json");
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
         await Verify(result);
@@ -62,9 +62,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(
-            tempFile.Path,
-            "newtonsoft.json");
+        await Updater.Update(cache, tempFile.Path, "newtonsoft.json");
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
         await Verify(result);
@@ -83,9 +81,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(
-            tempFile.Path,
-            "NonExistentPackage");
+        await Updater.Update(cache, tempFile.Path, "NonExistentPackage");
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -112,7 +108,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(tempFile.Path, null);
+        await Updater.Update(cache, tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -135,7 +131,7 @@
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(tempFile.Path, null);
+        await Updater.Update(cache, tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -281,7 +277,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(packagesPath, null);
+        await Updater.Update(cache, packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
 
@@ -306,7 +302,7 @@
         await File.WriteAllTextAsync(packagesPath, packages);
 
         // Should not throw, just log warning and return
-        await Updater.Update(packagesPath, null);
+        await Updater.Update(cache, packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
 
@@ -342,7 +338,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(directoryPath, packages);
 
-        await Updater.Update(directoryPath, null);
+        await Updater.Update(cache, directoryPath, null);
 
         var result = await File.ReadAllTextAsync(directoryPath);
 
@@ -400,7 +396,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(packagesPath, null);
+        await Updater.Update(cache, packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
         var doc = XDocument.Parse(result);
@@ -449,7 +445,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, packages);
 
-        await Updater.Update(packagesPath, null);
+        await Updater.Update(cache, packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
 
@@ -475,7 +471,7 @@
 
         using var tempFile = await TempFile.CreateText(packages);
 
-        await Updater.Update(tempFile.Path, null);
+        await Updater.Update(cache, tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -500,9 +496,7 @@
         using var tempFile = await TempFile.CreateText(packages);
 
         // Try to update the pinned package specifically
-        await Updater.Update(
-            tempFile.Path,
-            "Newtonsoft.Json");
+        await Updater.Update(cache, tempFile.Path, "Newtonsoft.Json");
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -526,7 +520,7 @@
 
         using var tempFile = await TempFile.CreateText(packages);
 
-        await Updater.Update(tempFile.Path, null);
+        await Updater.Update(cache, tempFile.Path, null);
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -568,7 +562,7 @@
         await File.WriteAllTextAsync(nugetConfigPath, nugetConfig);
         await File.WriteAllTextAsync(packagesPath, directoryPackages);
 
-        await Updater.Update(packagesPath, null);
+        await Updater.Update(cache, packagesPath, null);
 
         var result = await File.ReadAllTextAsync(packagesPath);
         var doc = XDocument.Parse(result);

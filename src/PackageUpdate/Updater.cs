@@ -1,6 +1,9 @@
 ﻿public static class Updater
 {
+    static XPlatMachineWideSetting machineSettings = new();
+
     public static async Task Update(
+        SourceCacheContext cache,
         string directoryPackagesPropsPath,
         string? packageName)
     {
@@ -41,14 +44,12 @@
         var settings = Settings.LoadDefaultSettings(
             root: directory,
             configFileName: null,
-            machineWideSettings: new XPlatMachineWideSetting());
+            machineWideSettings: machineSettings);
 
         var sourceProvider = new PackageSourceProvider(settings);
         var sources = sourceProvider.LoadPackageSources()
             .Where(_ => _.IsEnabled)
             .ToList();
-
-        using var cache = new SourceCacheContext();
 
         // Update each package
         foreach (var package in packageVersions)
