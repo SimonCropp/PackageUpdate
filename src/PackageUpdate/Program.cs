@@ -60,7 +60,6 @@ static async Task ProcessSolution(string solution, string? package, bool build)
     Log.Information("  {Solution}", solution);
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
-    var projects = ProjectFiles(solutionDirectory);
 
     if (File.Exists(Path.Combine(solutionDirectory, "Directory.Packages.props")))
     {
@@ -87,7 +86,7 @@ static Task Build(string solution)
         timeout: 0);
 }
 
-static async Task UpdateCentral(string? targetPackage, IEnumerable<string> projects, string solutionDirectory)
+static async Task UpdateCentral(string? targetPackage, string solutionDirectory)
 {
     if (targetPackage == null)
     {

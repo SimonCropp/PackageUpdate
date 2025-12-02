@@ -1,10 +1,4 @@
-﻿using System.Xml.Linq;
-using NuGet.Configuration;
-using NuGet.Protocol;
-using NuGet.Protocol.Core.Types;
-using NuGet.Versioning;
-
-public class DirectoryPackagesPropsUpdater
+﻿public class DirectoryPackagesPropsUpdater
 {
     public static async Task UpdateDirectoryPackagesProps(string directoryPackagesPropsPath)
     {
@@ -21,14 +15,15 @@ public class DirectoryPackagesPropsUpdater
                 PackageId = element.Attribute("Include")?.Value,
                 CurrentVersion = element.Attribute("Version")?.Value
             })
-            .Where(x => x.PackageId != null && x.CurrentVersion != null)
+            .Where(_ => _.PackageId != null &&
+                        _.CurrentVersion != null)
             .ToList();
 
         // Set up NuGet sources
         var settings = Settings.LoadDefaultSettings(directory);
         var sourceProvider = new PackageSourceProvider(settings);
         var sources = sourceProvider.LoadPackageSources()
-            .Where(s => s.IsEnabled)
+            .Where(_ => _.IsEnabled)
             .ToList();
 
         var cache = new SourceCacheContext();
@@ -54,12 +49,14 @@ public class DirectoryPackagesPropsUpdater
 
             var latestVersion = latestMetadata.Identity.Version;
 
-            if (latestVersion > currentVersion)
+            if (latestVersion <= currentVersion)
             {
-                // Update the Version attribute
-                package.Element.SetAttributeValue("Version", latestVersion.ToString());
-                Console.WriteLine($"Updated {package.PackageId}: {currentVersion} -> {latestVersion}");
+                continue;
             }
+
+            // Update the Version attribute
+            package.Element.SetAttributeValue("Version", latestVersion.ToString());
+            Log.Information("Updated {PackageId}: {NuGetVersion} -> {LatestVersion}", package.PackageId, currentVersion, latestVersion);
         }
 
         // Save the updated file
@@ -89,8 +86,8 @@ public class DirectoryPackagesPropsUpdater
                 Cancel.None);
 
             var sourceLatest = metadata
-                .Where(m => ShouldConsiderVersion(m.Identity.Version, currentVersion))
-                .MaxBy(m => m.Identity.Version);
+                .Where(_ => ShouldConsiderVersion(_.Identity.Version, currentVersion))
+                .MaxBy(_ => _.Identity.Version);
 
             if (sourceLatest == null ||
                 (latestVersion != null && sourceLatest.Identity.Version <= latestVersion))
