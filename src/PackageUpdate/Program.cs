@@ -20,17 +20,6 @@ static async Task Inner(string directory, string? package, bool build)
     {
         await TryProcessSolution(solution, package, build);
     }
-
-    await Shutdown();
-}
-
-static Task Shutdown()
-{
-    Log.Information("Shutdown dotnet build");
-    return DotnetStarter.StartDotNet(
-        arguments: "build-server shutdown",
-        directory: Environment.CurrentDirectory,
-        timeout: 20000);
 }
 
 static async Task TryProcessSolution(string solution, string? package, bool build)
@@ -118,66 +107,3 @@ static async Task UpdateCentral(string? targetPackage, IEnumerable<string> proje
         }
     }
 }
-
-static async Task Update(string? package, IEnumerable<string> projects, string solutionDirectory)
-{
-    if (package == null)
-    {
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                await Add(project, pending.Package, pending.Latest);
-            }
-        }
-    }
-    else
-    {
-        foreach (var project in projects)
-        {
-            WriteProject(project, solutionDirectory);
-            foreach (var pending in await PendingUpdateReader.ReadPendingUpdates(project))
-            {
-                if (!string.Equals(package, pending.Package, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                await Add(project, pending.Package, pending.Latest);
-            }
-        }
-    }
-}
-
-static async Task Add(string project, string package, string version)
-{
-    Log.Information("      {Package} : {Version}", package, version);
-    try
-    {
-        await DotnetStarter.StartDotNet(
-            arguments: $"add {project} package {package} -v {version}",
-            directory: Directory.GetParent(project)!.FullName,
-            timeout: 100000);
-    }
-    catch (Exception exception) when (exception.Message.Contains(" is incompatible with "))
-    {
-        Log.Error(exception,"    Skipping due to incompatible TFM. {Package} : {Version}", package, version);
-    }
-}
-
-static Task Build(string solution)
-{
-    Log.Information("    Build {Solution}", solution);
-    return DotnetStarter.StartDotNet(
-        arguments: $"build {solution} --no-restore --nologo",
-        directory: Directory.GetParent(solution)!.FullName,
-        timeout: 0);
-}
-
-static IEnumerable<string> ProjectFiles(string solutionDirectory) =>
-    FileSystem.EnumerateFiles(solutionDirectory, "*.csproj")
-        .Concat(FileSystem.EnumerateFiles(solutionDirectory, "*.fsproj"));
-
-static void WriteProject(string project, string solutionDirectory) =>
-    Log.Information("    {Trim}", project.Replace(solutionDirectory, "").Trim(Path.DirectorySeparatorChar));

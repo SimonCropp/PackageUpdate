@@ -6,10 +6,7 @@ using NuGet.Versioning;
 
 public class DirectoryPackagesPropsUpdater
 {
-
-    public static async Task UpdateDirectoryPackagesProps(
-        string directoryPackagesPropsPath,
-        ILogger logger)
+    public static async Task UpdateDirectoryPackagesProps(string directoryPackagesPropsPath)
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
@@ -48,8 +45,7 @@ public class DirectoryPackagesPropsUpdater
                 package.PackageId!,
                 currentVersion,
                 sources,
-                cache,
-                logger);
+                cache);
 
             if (latestMetadata == null)
             {
@@ -74,8 +70,7 @@ public class DirectoryPackagesPropsUpdater
         string packageId,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
-        SourceCacheContext cache,
-        ILogger logger)
+        SourceCacheContext cache)
     {
         IPackageSearchMetadata? latestMetadata = null;
         NuGetVersion? latestVersion = null;
@@ -90,8 +85,8 @@ public class DirectoryPackagesPropsUpdater
                 includePrerelease: currentVersion.IsPrerelease,
                 includeUnlisted: false,
                 cache,
-                logger,
-                CancellationToken.None);
+                SerilogNuGetLogger.Instance,
+                Cancel.None);
 
             var sourceLatest = metadata
                 .Where(m => ShouldConsiderVersion(m.Identity.Version, currentVersion))
