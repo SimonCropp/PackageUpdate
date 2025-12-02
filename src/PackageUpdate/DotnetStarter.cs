@@ -2,18 +2,16 @@
 {
     public static async Task<List<string>> StartDotNet(string arguments, string directory, int timeout)
     {
-        using var process = new Process
+        using var process = new Process();
+        process.StartInfo = new()
         {
-            StartInfo = new()
-            {
-                FileName = "dotnet",
-                Arguments = arguments,
-                WorkingDirectory = directory,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            }
+            FileName = "dotnet",
+            Arguments = arguments,
+            WorkingDirectory = directory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
         };
         process.Start();
         Log.Information("    dotnet {Arguments}", arguments);
