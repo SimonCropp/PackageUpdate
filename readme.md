@@ -15,6 +15,12 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
 **See [Milestones](../../milestones?state=closed) for release notes.**
 
 
+## Requirements/Caveats
+
+ * .net SDK 10 is required. https://dotnet.microsoft.com/en-us/download
+ * Only solutions using [Central Package Management (CPM)](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management) are supported.
+
+
 ## NuGet package
 
 https://nuget.org/packages/PackageUpdate/
@@ -29,6 +35,16 @@ Install [PackageUpdate](https://nuget.org/packages/PackageUpdate/)
 ```ps
 dotnet tool install -g PackageUpdate
 ```
+
+## Performance characteristics
+
+73 seconds for the following scenario
+
+ * 50 solutions
+ * 2 NuGet sources
+ * 384 nuget packages
+ * Network (Mbps): 94 up / 35 down. 17ms ping
+
 
 
 ## Usage
