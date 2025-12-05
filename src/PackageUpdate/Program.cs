@@ -15,7 +15,10 @@ static async Task Inner(string directory, string? package, bool build)
         Environment.Exit(1);
     }
 
-    using var cache = new SourceCacheContext();
+    using var cache = new SourceCacheContext
+    {
+        RefreshMemoryCache = true
+    };
     foreach (var solution in FileSystem.FindSolutions(directory))
     {
         await TryProcessSolution(cache, solution, package, build);
