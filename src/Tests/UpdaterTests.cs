@@ -1,10 +1,9 @@
 ﻿public class UpdaterTests
 {
-    static SourceCacheContext cache = new();
-
     [Fact]
     public async Task UpdateAllPackages()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -29,6 +28,7 @@
     [Fact]
     public async Task UpdateSinglePackage()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -53,6 +53,7 @@
     [Fact]
     public async Task UpdateSinglePackage_CaseInsensitive()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -74,6 +75,7 @@
     [Fact]
     public async Task UpdatePackageNotFound()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -96,6 +98,7 @@
     [Fact]
     public async Task PreservesFormatting()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -125,6 +128,7 @@
     [Fact]
     public async Task SkipsInvalidVersions()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -150,7 +154,7 @@
     [Fact]
     public async Task GetLatestVersion_StableToStable()
     {
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var currentVersion = NuGetVersion.Parse("12.0.1");
 
         var result = await Updater.GetLatestVersion(
@@ -167,7 +171,7 @@
     [Fact]
     public async Task GetLatestVersion_PreReleaseToPreRelease()
     {
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var currentVersion = NuGetVersion.Parse("1.0.0-beta.1");
 
         var result = await Updater.GetLatestVersion(
@@ -183,7 +187,7 @@
     [Fact]
     public async Task GetLatestVersion_DoesNotDowngradeStableToPreRelease()
     {
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var currentVersion = NuGetVersion.Parse("13.0.1");
 
         var result = await Updater.GetLatestVersion(
@@ -201,7 +205,7 @@
     [Fact]
     public async Task GetLatestVersion_PackageNotFound()
     {
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var currentVersion = NuGetVersion.Parse("1.0.0");
 
         var result = await Updater.GetLatestVersion(
@@ -216,7 +220,7 @@
     [Fact]
     public async Task GetLatestVersion_AlreadyLatest()
     {
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
 
         // Use a very high version number
         var currentVersion = NuGetVersion.Parse("999.999.999");
@@ -233,7 +237,7 @@
     [Fact]
     public async Task GetLatestVersion_ReturnsMetadata()
     {
-        var cache = new SourceCacheContext();
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var currentVersion = NuGetVersion.Parse("12.0.1");
 
         var result = await Updater.GetLatestVersion(
@@ -258,6 +262,7 @@
     [Fact]
     public async Task UsesLocalNuGetConfig()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
@@ -296,6 +301,7 @@
     [Fact]
     public async Task WarnsAndReturnsWhenNoNuGetConfig()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -322,6 +328,7 @@
     [Fact]
     public async Task UsesLocalNuGetConfigInHierarchy()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
@@ -360,6 +367,7 @@
     [Fact]
     public async Task GetLatestVersion_IgnoresUnlistedPackages()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         // YoloDev.Expecto.TestSdk v1.0.0 is unlisted
         // Start from a version before 1.0.0 to see if it skips the unlisted version
         var currentVersion = NuGetVersion.Parse("0.1.0");
@@ -380,6 +388,7 @@
     [Fact]
     public async Task UpdateSkipsUnlistedVersions()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
@@ -430,6 +439,7 @@
     [Fact]
     public async Task UpdateRespectsPinnedPackages()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
@@ -473,6 +483,7 @@
     [Fact]
     public async Task UpdateAllPackagesArePinned()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -498,6 +509,7 @@
     [Fact]
     public async Task UpdateSinglePinnedPackage()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -523,6 +535,7 @@
     [Fact]
     public async Task UpdatePreservesPinAttributeFormat()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -551,6 +564,7 @@
     [Fact]
     public async Task UpdateOnlyUnpinnedPackagesUpdated()
     {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
