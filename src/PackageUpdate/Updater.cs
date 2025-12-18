@@ -7,8 +7,8 @@
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
-        // Detect the original newline style
-        var newLine = DetectNewLine(directoryPackagesPropsPath);
+        // Detect the original newline style and trailing newline
+        var (newLine, hasTrailingNewline) = DetectNewLineInfo(directoryPackagesPropsPath);
 
         // Load the XML document
         var xml = XDocument.Load(directoryPackagesPropsPath);
@@ -84,36 +84,54 @@
             Async = true
         };
 
-        await using var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings);
-        await xml.SaveAsync(writer, Cancel.None);
+        await using (var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings))
+        {
+            await xml.SaveAsync(writer, Cancel.None);
+        }
+
+        // Match the original trailing newline convention
+        if (hasTrailingNewline)
+        {
+            await File.AppendAllTextAsync(directoryPackagesPropsPath, newLine);
+        }
     }
 
-    static string DetectNewLine(string filePath)
+    static (string newLine, bool hasTrailingNewline) DetectNewLineInfo(string filePath)
     {
-        // Read a portion of the file to detect newline style
-        using var reader = new StreamReader(filePath);
-        var buffer = new char[4096];
-        var charsRead = reader.Read(buffer, 0, buffer.Length);
+        var bytes = File.ReadAllBytes(filePath);
+        var newLine = Environment.NewLine;
+        var hasTrailingNewline = false;
 
-        for (var i = 0; i < charsRead; i++)
+        // Detect newline style from first occurrence
+        for (var i = 0; i < bytes.Length; i++)
         {
-            if (buffer[i] == '\r')
+            if (bytes[i] == '\r')
             {
-                // Check if it's CRLF or just CR
-                if (i + 1 < charsRead && buffer[i + 1] == '\n')
+                if (i + 1 < bytes.Length && bytes[i + 1] == '\n')
                 {
-                    return "\r\n"; // Windows-style
+                    newLine = "\r\n";
                 }
-                return "\r"; // Old Mac-style
+                else
+                {
+                    newLine = "\r";
+                }
+                break;
             }
-            if (buffer[i] == '\n')
+            if (bytes[i] == '\n')
             {
-                return "\n"; // Unix-style
+                newLine = "\n";
+                break;
             }
         }
 
-        // Default to environment newline if no newlines found
-        return Environment.NewLine;
+        // Detect trailing newline
+        if (bytes.Length > 0)
+        {
+            var lastByte = bytes[^1];
+            hasTrailingNewline = lastByte == '\n' || lastByte == '\r';
+        }
+
+        return (newLine, hasTrailingNewline);
     }
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(

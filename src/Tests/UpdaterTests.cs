@@ -674,4 +674,90 @@
         // Verify newline style is preserved (should still be Windows \r\n)
         Assert.Contains("\r\n", resultText);
     }
+
+    [Fact]
+    public async Task UpdatePreservesTrailingNewline()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        // Content WITH trailing newline
+        var content = "<Project>\n  <ItemGroup>\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\n  </ItemGroup>\n</Project>\n";
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        // Verify original ends with newline
+        var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.Equal((byte)'\n', originalBytes[^1]);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        // Verify result still ends with newline
+        var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.Equal((byte)'\n', resultBytes[^1]);
+    }
+
+    [Fact]
+    public async Task UpdatePreservesNoTrailingNewline()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        // Content WITHOUT trailing newline
+        var content = "<Project>\n  <ItemGroup>\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\n  </ItemGroup>\n</Project>";
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        // Verify original does NOT end with newline
+        var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.NotEqual((byte)'\n', originalBytes[^1]);
+        Assert.NotEqual((byte)'\r', originalBytes[^1]);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        // Verify result still does NOT end with newline
+        var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.NotEqual((byte)'\n', resultBytes[^1]);
+        Assert.NotEqual((byte)'\r', resultBytes[^1]);
+    }
+
+    [Fact]
+    public async Task UpdatePreservesTrailingCRLF()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        // Content WITH trailing CRLF
+        var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>\r\n";
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        // Verify original ends with \r\n
+        var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.Equal((byte)'\n', originalBytes[^1]);
+        Assert.Equal((byte)'\r', originalBytes[^2]);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        // Verify result still ends with \r\n
+        var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.Equal((byte)'\n', resultBytes[^1]);
+        Assert.Equal((byte)'\r', resultBytes[^2]);
+    }
+
+    [Fact]
+    public async Task UpdatePreservesNoTrailingNewlineWithCRLF()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        // Content with CRLF style but WITHOUT trailing newline
+        var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>";
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        // Verify original does NOT end with newline
+        var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.NotEqual((byte)'\n', originalBytes[^1]);
+        Assert.NotEqual((byte)'\r', originalBytes[^1]);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        // Verify result still does NOT end with newline
+        var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        Assert.NotEqual((byte)'\n', resultBytes[^1]);
+        Assert.NotEqual((byte)'\r', resultBytes[^1]);
+    }
 }

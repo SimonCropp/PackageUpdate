@@ -32,7 +32,7 @@
         process.Start();
         Log.Information("    dotnet {Arguments}", arguments);
 
-        if (!process.WaitForExit(300000))
+        if (!process.WaitForExit(60000))
         {
             process.Kill(true);
             throw new(
