@@ -622,4 +622,56 @@
         Assert.NotEqual("2.4.0", xunit.Version);
         Assert.Null(xunit.Pinned);
     }
+
+    [Fact]
+    public async Task UpdatePreservesOriginalNewlineStyle()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content = "<Project>\n  <ItemGroup>\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\n  </ItemGroup>\n</Project>\n";
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        // Read the original file to verify it has \n newlines
+        var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        var originalText = Encoding.UTF8.GetString(originalBytes);
+
+        // Verify original has Unix newlines (\n) and not Windows newlines (\r\n)
+        Assert.Contains("\n", originalText);
+        Assert.DoesNotContain("\r\n", originalText);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        // Read the result
+        var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        var resultText = Encoding.UTF8.GetString(resultBytes);
+
+        // Verify newline style is preserved (should still be Unix \n, not Windows \r\n)
+        Assert.Contains("\n", resultText);
+        Assert.DoesNotContain("\r\n", resultText);
+    }
+
+    [Fact]
+    public async Task UpdatePreservesWindowsNewlineStyle()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>\r\n";
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        // Read the original file to verify it has \r\n newlines
+        var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        var originalText = Encoding.UTF8.GetString(originalBytes);
+
+        // Verify original has Windows newlines (\r\n)
+        Assert.Contains("\r\n", originalText);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        // Read the result
+        var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
+        var resultText = Encoding.UTF8.GetString(resultBytes);
+
+        // Verify newline style is preserved (should still be Windows \r\n)
+        Assert.Contains("\r\n", resultText);
+    }
 }

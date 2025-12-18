@@ -7,6 +7,9 @@
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
+        // Detect the original newline style
+        var newLine = DetectNewLine(directoryPackagesPropsPath);
+
         // Load the XML document
         var xml = XDocument.Load(directoryPackagesPropsPath);
 
@@ -71,19 +74,47 @@
             Log.Information("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
         }
 
+        var xmlSettings = new XmlWriterSettings
+        {
+            OmitXmlDeclaration = true,
+            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            Indent = true,
+            IndentChars = "  ",
+            NewLineChars = newLine,
+            Async = true
+        };
+
         await using var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings);
         await xml.SaveAsync(writer, Cancel.None);
     }
 
-
-    static XmlWriterSettings xmlSettings = new()
+    static string DetectNewLine(string filePath)
     {
-        OmitXmlDeclaration = true,
-        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-        Indent = true,
-        IndentChars = "  ",
-        Async = true
-    };
+        // Read a portion of the file to detect newline style
+        using var reader = new StreamReader(filePath);
+        var buffer = new char[4096];
+        var charsRead = reader.Read(buffer, 0, buffer.Length);
+
+        for (var i = 0; i < charsRead; i++)
+        {
+            if (buffer[i] == '\r')
+            {
+                // Check if it's CRLF or just CR
+                if (i + 1 < charsRead && buffer[i + 1] == '\n')
+                {
+                    return "\r\n"; // Windows-style
+                }
+                return "\r"; // Old Mac-style
+            }
+            if (buffer[i] == '\n')
+            {
+                return "\n"; // Unix-style
+            }
+        }
+
+        // Default to environment newline if no newlines found
+        return Environment.NewLine;
+    }
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
         string package,
