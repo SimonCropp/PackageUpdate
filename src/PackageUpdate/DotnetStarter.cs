@@ -32,8 +32,9 @@
         process.Start();
         Log.Information("    dotnet {Arguments}", arguments);
 
-        if (!process.WaitForExit(30000))
+        if (!process.WaitForExit(300000))
         {
+            process.Kill(true);
             throw new(
                 $"""
                  Command: dotnet {arguments}
