@@ -1,4 +1,4 @@
-* text=auto eol=crlf
+* text=auto eol=lf
 *.txt -text
 *.png binary
 *.snk binary
