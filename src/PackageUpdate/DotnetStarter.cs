@@ -5,8 +5,7 @@
         Log.Information("    Build {Solution}", solution);
         return StartDotNet(
             arguments: $"build {solution} --nologo",
-            directory: Directory.GetParent(solution)!.FullName,
-            timeout: 0);
+            directory: Directory.GetParent(solution)!.FullName);
     }
 
     public static Task Shutdown()
@@ -14,11 +13,10 @@
         Log.Information("Shutdown dotnet build");
         return StartDotNet(
             arguments: "build-server shutdown",
-            directory: Environment.CurrentDirectory,
-            timeout: 20000);
+            directory: Environment.CurrentDirectory);
     }
 
-    static async Task<List<string>> StartDotNet(string arguments, string directory, int timeout)
+    static async Task<List<string>> StartDotNet(string arguments, string directory)
     {
         using var process = new Process();
         process.StartInfo = new()
@@ -34,12 +32,7 @@
         process.Start();
         Log.Information("    dotnet {Arguments}", arguments);
 
-        if (timeout == 0)
-        {
-            return [];
-        }
-
-        if (!process.WaitForExit(timeout))
+        if (!process.WaitForExit(30000))
         {
             throw new(
                 $"""
