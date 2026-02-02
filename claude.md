@@ -46,10 +46,11 @@ packageupdate --build
 
 ### Key Components
 
-- **Updater.cs**: Core update logic
+- **Updater.cs**: Core update and migration logic
   - Parses `Directory.Packages.props` XML
   - Respects `Pinned="true"` attribute to skip packages
   - Queries NuGet sources for latest versions via NuGet.Protocol API
+  - Detects deprecated packages and auto-migrates to alternatives when current version is deprecated
   - Preserves file formatting (newlines, indentation, trailing newlines)
   - Only considers stable versions when current version is stable
   - Only considers pre-release versions when current version is pre-release
@@ -92,6 +93,50 @@ The tool only works with CPM. Each solution must have a `Directory.Packages.prop
 ### Package Pinning
 
 Packages with `Pinned="true"` attribute are never updated, even when explicitly targeted via `--package` flag.
+
+### Package Migration
+
+The tool automatically detects and migrates deprecated packages when an alternative is available.
+
+#### How It Works
+
+When updating packages, PackageUpdate checks if the **current version** of a package is marked as deprecated in NuGet. If the package has an alternative specified and that alternative is available in configured NuGet sources, the tool will automatically migrate:
+
+1. Replaces the `Include` attribute with the alternative package name
+2. Sets the `Version` to the latest version of the alternative (or the minimum version from the range if specified)
+3. Logs the migration with deprecation reason
+
+#### Migration Examples
+
+```xml
+<!-- Before -->
+<PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+
+<!-- After (migrated) -->
+<PackageVersion Include="Azure.Storage.Common" Version="12.26.0" />
+```
+
+#### Migration Behavior
+
+- **Pinned packages**: Never migrated (Pinned="true" is respected)
+- **No alternative available**: Package version updated normally, warning logged
+- **Alternative not found**: Package version updated normally, warning logged
+- **Alternative already exists**: Migration skipped, warning logged, both packages remain
+- **--package flag**: Migrations still occur for specified deprecated packages
+- **Current version check**: Only migrates if the **current** version is deprecated, not if only newer versions are deprecated
+
+#### Migration Logging
+
+Successful migration:
+```
+Migrated WindowsAzure.Storage -> Azure.Storage.Common (Version: 12.26.0) [Deprecated: Legacy]
+```
+
+Deprecation warnings (when no migration possible):
+```
+Package WindowsAzure.Storage is deprecated but has no alternative. Reasons: Legacy
+Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common, but alternative already exists
+```
 
 ### Version Selection Logic
 
