@@ -51,6 +51,35 @@
                 continue;
             }
 
+            // Check if current version is deprecated and attempt migration
+            var currentMetadata = await GetPackageMetadata(
+                package.Package!,
+                currentVersion,
+                sources,
+                cache);
+
+            if (currentMetadata != null)
+            {
+                var deprecation = await currentMetadata.GetDeprecationMetadataAsync();
+                if (deprecation != null)
+                {
+                    var migrated = await TryMigratePackage(
+                        package.Element,
+                        package.Package!,
+                        deprecation,
+                        sources,
+                        cache,
+                        xml);
+
+                    if (migrated)
+                    {
+                        // Migration successful, skip normal version update
+                        continue;
+                    }
+                    // If migration failed, continue with normal version update
+                }
+            }
+
             var latestMetadata = await GetLatestVersion(
                 package.Package!,
                 currentVersion,
@@ -176,6 +205,102 @@
         return latestMetadata;
     }
 
+    static async Task<IPackageSearchMetadata?> GetPackageMetadata(
+        string package,
+        NuGetVersion version,
+        List<PackageSource> sources,
+        SourceCacheContext cache)
+    {
+        foreach (var source in sources)
+        {
+            var (_, metadataResource) = await RepositoryReader.Read(source);
+
+            var metadata = await metadataResource.GetMetadataAsync(
+                new(package, version),
+                cache,
+                SerilogNuGetLogger.Instance,
+                Cancel.None);
+
+            if (metadata != null)
+            {
+                return metadata;
+            }
+        }
+
+        return null;
+    }
+
+    static async Task<bool> TryMigratePackage(
+        XElement packageElement,
+        string currentPackage,
+        PackageDeprecationMetadata deprecation,
+        List<PackageSource> sources,
+        SourceCacheContext cache,
+        XDocument xml)
+    {
+        // Check if alternate package exists
+        var alternatePackage = deprecation.AlternatePackage;
+        if (alternatePackage == null)
+        {
+            Log.Warning(
+                "Package {Package} is deprecated but has no alternative. Reasons: {Reasons}",
+                currentPackage,
+                string.Join(", ", deprecation.Reasons));
+            return false;
+        }
+
+        // Check if alternate already exists in Directory.Packages.props
+        var existingAlternate = xml.Descendants("PackageVersion")
+            .FirstOrDefault(_ =>
+                string.Equals(
+                    _.Attribute("Include")?.Value,
+                    alternatePackage.PackageId,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (existingAlternate != null)
+        {
+            Log.Warning(
+                "Package {Package} is deprecated with alternative {Alternative}, but alternative already exists",
+                currentPackage,
+                alternatePackage.PackageId);
+            return false;
+        }
+
+        // Verify alternate package exists in NuGet sources
+        var alternateMetadata = await GetLatestVersion(
+            alternatePackage.PackageId,
+            // Start from 0.0.0 to get any version
+            new(0, 0, 0),
+            sources,
+            cache);
+
+        if (alternateMetadata == null)
+        {
+            Log.Warning(
+                "Package {Package} is deprecated with alternative {Alternative}, but alternative not found in sources",
+                currentPackage,
+                alternatePackage.PackageId);
+            return false;
+        }
+
+        // Perform migration: update Include attribute and Version
+        packageElement.SetAttributeValue("Include", alternatePackage.PackageId);
+
+        // Use the minimum version from the range if specified,
+        // otherwise use the latest version we found
+        var targetVersion = alternatePackage.Range?.MinVersion ?? alternateMetadata.Identity.Version;
+        packageElement.SetAttributeValue("Version", targetVersion.ToString());
+
+        Log.Information(
+            "Migrated {OldPackage} -> {NewPackage} (Version: {Version}) [Deprecated: {Reasons}]",
+            currentPackage,
+            alternatePackage.PackageId,
+            targetVersion,
+            string.Join(", ", deprecation.Reasons));
+
+        return true;
+    }
+
     static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
     {
         // Use FindPackageByIdResource to efficiently get version list
@@ -188,7 +313,7 @@
             Cancel.None);
 
         return versions
-            .Where(v => ShouldConsiderVersion(v, currentVersion))
+            .Where(_ => ShouldConsiderVersion(_, currentVersion))
             .OrderByDescending(_ => _)
             .ToList();
     }

@@ -422,7 +422,7 @@
         var doc = XDocument.Parse(result);
 
         var packageVersion = doc.Descendants("PackageVersion")
-            .FirstOrDefault(e => e.Attribute("Include")?.Value == "YoloDev.Expecto.TestSdk");
+            .FirstOrDefault(_ => _.Attribute("Include")?.Value == "YoloDev.Expecto.TestSdk");
 
         Assert.NotNull(packageVersion);
 
@@ -759,5 +759,132 @@
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
         Assert.NotEqual((byte)'\n', resultBytes[^1]);
         Assert.NotEqual((byte)'\r', resultBytes[^1]);
+    }
+
+    [Fact]
+    public async Task MigratesDeprecatedPackageWithAlternative()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+        var doc = XDocument.Parse(result);
+
+        var packages = doc.Descendants("PackageVersion")
+            .Select(element => new
+            {
+                Id = element.Attribute("Include")?.Value,
+                Version = element.Attribute("Version")?.Value
+            })
+            .ToList();
+
+        // Original package should be migrated to the alternative
+        Assert.DoesNotContain(packages, _ => _.Id == "WindowsAzure.Storage");
+
+        // Alternative package should exist
+        var alternativePackage = packages.FirstOrDefault(_ => _.Id == "Azure.Storage.Common" || _.Id == "Azure.Storage.Blobs");
+        Assert.NotNull(alternativePackage);
+        Assert.NotNull(alternativePackage.Version);
+    }
+
+    [Fact]
+    public async Task SkipsMigrationWhenAlternativeAlreadyExists()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+                <PackageVersion Include="Azure.Storage.Common" Version="12.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+
+        // Use Verify to see the actual output
+        await Verify(result);
+    }
+
+    [Fact]
+    public async Task PinnedDeprecatedPackageNotMigrated()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" Pinned="true" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+        var doc = XDocument.Parse(result);
+
+        var packages = doc.Descendants("PackageVersion")
+            .Select(element => new
+            {
+                Id = element.Attribute("Include")?.Value,
+                Version = element.Attribute("Version")?.Value,
+                Pinned = element.Attribute("Pinned")?.Value
+            })
+            .ToList();
+
+        // Pinned package should not be migrated
+        var pinnedPackage = packages.FirstOrDefault(_ => _.Id == "WindowsAzure.Storage");
+        Assert.NotNull(pinnedPackage);
+        Assert.Equal("9.3.3", pinnedPackage.Version);
+        Assert.Equal("true", pinnedPackage.Pinned);
+    }
+
+    [Fact]
+    public async Task MigrationPreservesFormattingAndComments()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content =
+            """
+            <Project>
+              <!-- Important packages -->
+              <ItemGroup>
+                <!-- This one is deprecated -->
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+                <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+
+        // Verify comments are preserved
+        Assert.Contains("<!-- Important packages -->", result);
+        Assert.Contains("<!-- This one is deprecated -->", result);
+
+        // Verify the package was migrated
+        Assert.DoesNotContain("WindowsAzure.Storage", result);
     }
 }
