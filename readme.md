@@ -317,6 +317,199 @@ The next time you run the updater, it will update to the latest version.
 - Comments and formatting around pinned packages are preserved during updates
 
 
+## Automatic Package Migration
+
+
+### Overview
+
+PackageUpdate automatically detects and migrates deprecated NuGet packages to their recommended alternatives. When a package is marked as deprecated on NuGet.org with an alternative package specified, the tool will automatically replace it during updates.
+
+
+### How It Works
+
+When updating packages, PackageUpdate:
+
+1. Checks if the **current version** of each package is marked as deprecated
+2. If an alternative package is specified in the deprecation metadata:
+   - Verifies the alternative package exists in configured NuGet sources
+   - Checks that the alternative doesn't already exist in `Directory.Packages.props`
+   - Replaces the package reference with the alternative
+   - Sets the version to the latest available version of the alternative
+3. Logs the migration with the deprecation reason
+
+
+### Example Migration
+
+**Before:**
+
+```xml
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>
+```
+
+**After running `packageupdate`:**
+
+```xml
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="Azure.Storage.Common" Version="12.26.0" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>
+```
+
+Console output:
+
+```
+Migrated WindowsAzure.Storage -> Azure.Storage.Common (Version: 12.26.0) [Deprecated: Legacy]
+Updated Newtonsoft.Json: 13.0.1 -> 13.0.3
+```
+
+
+### Migration Behavior
+
+
+#### Automatic by Default
+
+Migrations happen automatically without requiring any flags or configuration. The tool detects deprecated packages and migrates them seamlessly.
+
+
+#### Pinned Packages Are Never Migrated
+
+If a package is pinned, it will not be migrated even if it's deprecated:
+
+```xml
+<PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" Pinned="true" />
+```
+
+This package will remain unchanged.
+
+
+#### When Alternative Already Exists
+
+If the alternative package already exists in `Directory.Packages.props`, the migration is skipped:
+
+```xml
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+    <PackageVersion Include="Azure.Storage.Common" Version="12.0.0" />
+  </ItemGroup>
+</Project>
+```
+
+Output:
+
+```
+Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common, but alternative already exists
+```
+
+Both packages remain in the file, and only `Azure.Storage.Common` gets updated to the latest version.
+
+
+#### When No Alternative is Available
+
+If a package is deprecated but has no alternative specified, the tool logs a warning and continues with normal version update:
+
+```
+Package SomeDeprecatedPackage is deprecated but has no alternative. Reasons: Legacy
+```
+
+
+#### Current Version Check
+
+The tool only migrates if the **current** version you're using is deprecated. If you're on an older, non-deprecated version, and only newer versions are deprecated, no migration occurs. This prevents unnecessary migrations when you're deliberately staying on an older version.
+
+
+#### Specific Package Flag
+
+The migration feature works with the `--package` flag:
+
+```bash
+packageupdate --package WindowsAzure.Storage
+```
+
+If `WindowsAzure.Storage` is deprecated with an alternative, it will be migrated automatically.
+
+
+### Common Scenarios
+
+
+#### Scenario 1: Microsoft Azure SDK Packages
+
+Many older Azure SDK packages have been deprecated in favor of the new Azure SDK:
+
+- `WindowsAzure.Storage` → `Azure.Storage.Common` or `Azure.Storage.Blobs`
+- `Microsoft.Azure.Storage.Blob` → `Azure.Storage.Blobs`
+- `Microsoft.Azure.DocumentDB` → `Microsoft.Azure.Cosmos`
+
+These migrations happen automatically when you run `packageupdate`.
+
+
+#### Scenario 2: Preventing Migration
+
+If you want to prevent migration of a deprecated package (e.g., you're not ready to migrate yet), pin the package:
+
+```xml
+<!-- Pinned: Not ready to migrate to Azure.Storage.Blobs yet -->
+<PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" Pinned="true" />
+```
+
+
+#### Scenario 3: Manual Review After Migration
+
+After automatic migration, you may want to:
+
+1. Review the changes in `Directory.Packages.props`
+2. Update your code to use the new package's API (if breaking changes exist)
+3. Test thoroughly before committing
+
+The migration updates the package reference but doesn't modify your source code.
+
+
+### Logging
+
+
+#### Successful Migration
+
+```
+Migrated WindowsAzure.Storage -> Azure.Storage.Common (Version: 12.26.0) [Deprecated: Legacy]
+```
+
+
+#### Migration Skipped (Alternative Exists)
+
+```
+Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common, but alternative already exists
+```
+
+
+#### Migration Skipped (No Alternative)
+
+```
+Package MyOldPackage is deprecated but has no alternative. Reasons: Legacy, Critical Bugs
+```
+
+
+#### Migration Skipped (Alternative Not Found)
+
+```
+Package OldPackage is deprecated with alternative NewPackage, but alternative not found in sources
+```
+
+
+### Technical Details
+
+- Migration uses NuGet's official deprecation metadata API (`PackageDeprecationMetadata`)
+- The `AlternatePackage` information comes directly from package authors via NuGet.org
+- File formatting, comments, and XML structure are preserved during migration
+- Migrations are logged distinctly from version updates for clarity
+
+
 ## Icon
 
 [Update](https://thenounproject.com/search/?q=update&i=2060555) by [Andy Miranda](https://thenounproject.com/andylontuan88) from [The Noun Project](https://thenounproject.com/).
