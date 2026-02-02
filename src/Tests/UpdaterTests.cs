@@ -887,4 +887,46 @@
         // Verify the package was migrated
         Assert.DoesNotContain("WindowsAzure.Storage", result);
     }
+
+    [Fact]
+    public async Task MigratedPackageNeverGetsZeroVersion()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+        var doc = XDocument.Parse(result);
+
+        var packages = doc.Descendants("PackageVersion")
+            .Select(element => new
+            {
+                Id = element.Attribute("Include")?.Value,
+                Version = element.Attribute("Version")?.Value
+            })
+            .ToList();
+
+        // Verify no package has version 0.0.0
+        // This test ensures that when deprecation metadata specifies MinVersion as 0.0.0
+        // (open-ended range like "[,)"), we use the latest version instead
+        foreach (var package in packages)
+        {
+            Assert.NotNull(package.Version);
+            Assert.NotEqual("0.0.0", package.Version);
+
+            // Verify it's a valid version
+            Assert.True(NuGetVersion.TryParse(package.Version, out var version));
+            Assert.True(version > new NuGetVersion(0, 0, 0));
+        }
+    }
 }
