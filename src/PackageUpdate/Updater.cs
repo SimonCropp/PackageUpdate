@@ -43,6 +43,9 @@
 
         var sources = PackageSourceReader.Read(directory);
 
+        // Track migrations for csproj updates
+        var migrations = new List<(string OldPackage, string NewPackage)>();
+
         // Update each package
         foreach (var package in packageVersions)
         {
@@ -63,7 +66,7 @@
                 var deprecation = await currentMetadata.GetDeprecationMetadataAsync();
                 if (deprecation != null)
                 {
-                    var migrated = await TryMigratePackage(
+                    var migration = await TryMigratePackage(
                         package.Element,
                         package.Package!,
                         deprecation,
@@ -71,8 +74,9 @@
                         cache,
                         xml);
 
-                    if (migrated)
+                    if (migration != null)
                     {
+                        migrations.Add(migration.Value);
                         // Migration successful, skip normal version update
                         continue;
                     }
@@ -122,6 +126,12 @@
         if (hasTrailingNewline)
         {
             await File.AppendAllTextAsync(directoryPackagesPropsPath, newLine);
+        }
+
+        // Update PackageReference entries in csproj files for migrated packages
+        if (migrations.Count > 0)
+        {
+            await UpdateCsprojFiles(directory, migrations);
         }
     }
 
@@ -230,7 +240,7 @@
         return null;
     }
 
-    static async Task<bool> TryMigratePackage(
+    static async Task<(string OldPackage, string NewPackage)?> TryMigratePackage(
         XElement packageElement,
         string currentPackage,
         PackageDeprecationMetadata deprecation,
@@ -246,7 +256,7 @@
                 "Package {Package} is deprecated but has no alternative. Reasons: {Reasons}",
                 currentPackage,
                 string.Join(", ", deprecation.Reasons));
-            return false;
+            return null;
         }
 
         // Check if alternate already exists in Directory.Packages.props
@@ -263,7 +273,7 @@
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative already exists",
                 currentPackage,
                 alternatePackage.PackageId);
-            return false;
+            return null;
         }
 
         // Verify alternate package exists in NuGet sources
@@ -280,7 +290,7 @@
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative not found in sources",
                 currentPackage,
                 alternatePackage.PackageId);
-            return false;
+            return null;
         }
 
         // Perform migration: update Include attribute and Version
@@ -301,7 +311,103 @@
             targetVersion,
             string.Join(", ", deprecation.Reasons));
 
-        return true;
+        return (currentPackage, alternatePackage.PackageId);
+    }
+
+    static async Task UpdateCsprojFiles(string directory, List<(string OldPackage, string NewPackage)> migrations)
+    {
+        // Find all csproj files recursively
+        var csprojFiles = EnumerateCsprojFiles(directory);
+
+        foreach (var csprojPath in csprojFiles)
+        {
+            var updated = false;
+            var (newLine, hasTrailingNewline) = DetectNewLineInfo(csprojPath);
+            var csprojXml = XDocument.Load(csprojPath);
+
+            foreach (var (oldPackage, newPackage) in migrations)
+            {
+                var packageReferences = csprojXml.Descendants("PackageReference")
+                    .Where(_ => string.Equals(
+                        _.Attribute("Include")?.Value,
+                        oldPackage,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                foreach (var packageRef in packageReferences)
+                {
+                    packageRef.SetAttributeValue("Include", newPackage);
+                    updated = true;
+                    Log.Information(
+                        "Updated PackageReference {OldPackage} -> {NewPackage} in {File}",
+                        oldPackage,
+                        newPackage,
+                        Path.GetFileName(csprojPath));
+                }
+            }
+
+            if (updated)
+            {
+                var xmlSettings = new XmlWriterSettings
+                {
+                    OmitXmlDeclaration = true,
+                    Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                    Indent = true,
+                    IndentChars = "  ",
+                    NewLineChars = newLine,
+                    Async = true
+                };
+
+                await using (var writer = XmlWriter.Create(csprojPath, xmlSettings))
+                {
+                    await csprojXml.SaveAsync(writer, Cancel.None);
+                }
+
+                if (hasTrailingNewline)
+                {
+                    await File.AppendAllTextAsync(csprojPath, newLine);
+                }
+            }
+        }
+    }
+
+    static IEnumerable<string> EnumerateCsprojFiles(string directory)
+    {
+        var stack = new Stack<string>();
+        stack.Push(directory);
+
+        while (stack.TryPop(out var current))
+        {
+            IEnumerable<string> files;
+            try
+            {
+                files = Directory.EnumerateFiles(current, "*.csproj", SearchOption.TopDirectoryOnly);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                files = [];
+            }
+
+            foreach (var file in files)
+            {
+                yield return file;
+            }
+
+            IEnumerable<string> subdirectories;
+            try
+            {
+                subdirectories = Directory.EnumerateDirectories(current, "*", SearchOption.TopDirectoryOnly);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                subdirectories = [];
+            }
+
+            foreach (var subdirectory in subdirectories)
+            {
+                stack.Push(subdirectory);
+            }
+        }
     }
 
     static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
