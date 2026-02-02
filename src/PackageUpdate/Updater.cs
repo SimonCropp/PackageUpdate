@@ -60,7 +60,7 @@
 
             if (currentMetadata != null)
             {
-                var deprecation = await CheckDeprecation(currentMetadata);
+                var deprecation = await currentMetadata.GetDeprecationMetadataAsync();
                 if (deprecation != null)
                 {
                     var migrated = await TryMigratePackage(
@@ -230,10 +230,6 @@
         return null;
     }
 
-    static async Task<PackageDeprecationMetadata?> CheckDeprecation(
-        IPackageSearchMetadata metadata) =>
-        await metadata.GetDeprecationMetadataAsync();
-
     static async Task<bool> TryMigratePackage(
         XElement packageElement,
         string currentPackage,
@@ -255,9 +251,9 @@
 
         // Check if alternate already exists in Directory.Packages.props
         var existingAlternate = xml.Descendants("PackageVersion")
-            .FirstOrDefault(e =>
+            .FirstOrDefault(_ =>
                 string.Equals(
-                    e.Attribute("Include")?.Value,
+                    _.Attribute("Include")?.Value,
                     alternatePackage.PackageId,
                     StringComparison.OrdinalIgnoreCase));
 
@@ -273,7 +269,8 @@
         // Verify alternate package exists in NuGet sources
         var alternateMetadata = await GetLatestVersion(
             alternatePackage.PackageId,
-            new NuGetVersion(0, 0, 0), // Start from 0.0.0 to get any version
+            // Start from 0.0.0 to get any version
+            new(0, 0, 0),
             sources,
             cache);
 
@@ -316,7 +313,7 @@
             Cancel.None);
 
         return versions
-            .Where(v => ShouldConsiderVersion(v, currentVersion))
+            .Where(_ => ShouldConsiderVersion(_, currentVersion))
             .OrderByDescending(_ => _)
             .ToList();
     }

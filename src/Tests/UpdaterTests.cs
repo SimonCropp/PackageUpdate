@@ -422,7 +422,7 @@
         var doc = XDocument.Parse(result);
 
         var packageVersion = doc.Descendants("PackageVersion")
-            .FirstOrDefault(e => e.Attribute("Include")?.Value == "YoloDev.Expecto.TestSdk");
+            .FirstOrDefault(_ => _.Attribute("Include")?.Value == "YoloDev.Expecto.TestSdk");
 
         Assert.NotNull(packageVersion);
 
@@ -790,10 +790,10 @@
             .ToList();
 
         // Original package should be migrated to the alternative
-        Assert.DoesNotContain(packages, p => p.Id == "WindowsAzure.Storage");
+        Assert.DoesNotContain(packages, _ => _.Id == "WindowsAzure.Storage");
 
         // Alternative package should exist
-        var alternativePackage = packages.FirstOrDefault(p => p.Id == "Azure.Storage.Common" || p.Id == "Azure.Storage.Blobs");
+        var alternativePackage = packages.FirstOrDefault(_ => _.Id == "Azure.Storage.Common" || _.Id == "Azure.Storage.Blobs");
         Assert.NotNull(alternativePackage);
         Assert.NotNull(alternativePackage.Version);
     }
@@ -852,7 +852,7 @@
             .ToList();
 
         // Pinned package should not be migrated
-        var pinnedPackage = packages.FirstOrDefault(p => p.Id == "WindowsAzure.Storage");
+        var pinnedPackage = packages.FirstOrDefault(_ => _.Id == "WindowsAzure.Storage");
         Assert.NotNull(pinnedPackage);
         Assert.Equal("9.3.3", pinnedPackage.Version);
         Assert.Equal("true", pinnedPackage.Pinned);

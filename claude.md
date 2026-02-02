@@ -12,6 +12,59 @@ PackageUpdate is a .NET global tool that updates NuGet packages for all solution
 - Uses C# preview language features (`LangVersion>preview`)
 - Central Package Management (CPM) is required for all target solutions
 
+## Coding Conventions
+
+### Lambda Expressions
+
+Always use underscore `_` for single-parameter lambda expressions instead of named parameters:
+
+```csharp
+// ✅ Correct
+packages.Where(_ => _.Id == "MyPackage")
+packages.FirstOrDefault(_ => _.Version == "1.0.0")
+packages.OrderByDescending(_ => _)
+elements.Any(_ => _.IsEnabled)
+
+// ❌ Incorrect - don't use named parameters
+packages.Where(p => p.Id == "MyPackage")
+packages.FirstOrDefault(pkg => pkg.Version == "1.0.0")
+elements.Any(e => e.IsEnabled)
+```
+
+This applies even when the parameter is used multiple times in the expression:
+
+```csharp
+// ✅ Correct
+xml.Descendants("PackageVersion")
+    .FirstOrDefault(_ =>
+        string.Equals(
+            _.Attribute("Include")?.Value,
+            packageName,
+            StringComparison.OrdinalIgnoreCase))
+
+// ❌ Incorrect
+xml.Descendants("PackageVersion")
+    .FirstOrDefault(e =>
+        string.Equals(
+            e.Attribute("Include")?.Value,
+            packageName,
+            StringComparison.OrdinalIgnoreCase))
+```
+
+**Exception:** Use descriptive parameter names when creating complex anonymous types or when the lambda body is long and clarity would benefit from a meaningful name:
+
+```csharp
+// Named parameter acceptable for complex Select projections
+var packageVersions = xml.Descendants("PackageVersion")
+    .Select(element => new
+    {
+        Element = element,
+        Package = element.Attribute("Include")?.Value,
+        CurrentVersion = element.Attribute("Version")?.Value,
+        Pinned = element.Attribute("Pinned")?.Value == "true"
+    })
+```
+
 ## Build and Test Commands
 
 ```bash
