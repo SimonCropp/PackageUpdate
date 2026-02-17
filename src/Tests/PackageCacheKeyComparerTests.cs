@@ -68,9 +68,10 @@ public class PackageCacheKeyComparerTests
     [Fact]
     public void WorksWithDictionary()
     {
-        Dictionary<(string Package, NuGetVersion Version), string> dictionary = new(comparer);
-
-        dictionary[("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"))] = "first";
+        var dictionary = new Dictionary<(string Package, NuGetVersion Version), string>(comparer)
+        {
+            [("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"))] = "first"
+        };
 
         Assert.True(dictionary.ContainsKey(("newtonsoft.json", NuGetVersion.Parse("13.0.1"))));
         Assert.True(dictionary.ContainsKey(("NEWTONSOFT.JSON", NuGetVersion.Parse("13.0.1"))));

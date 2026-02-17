@@ -15,6 +15,7 @@ static async Task Inner(string directory, string? package, bool build)
         Environment.Exit(1);
     }
 
+    var totalStopwatch = Stopwatch.StartNew();
     using var cache = new SourceCacheContext
     {
         RefreshMemoryCache = true
@@ -28,6 +29,8 @@ static async Task Inner(string directory, string? package, bool build)
     {
         await DotnetStarter.Shutdown();
     }
+
+    Log.Information("Completed in {Elapsed}", totalStopwatch.Elapsed);
 }
 
 static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
@@ -67,7 +70,9 @@ static async Task ProcessSolution(SourceCacheContext cache, string solution, str
         return;
     }
 
+    var stopwatch = Stopwatch.StartNew();
     await Updater.Update(cache, props, package);
+    Log.Information("    Updated in {Elapsed}", stopwatch.Elapsed);
 
     if (build)
     {
