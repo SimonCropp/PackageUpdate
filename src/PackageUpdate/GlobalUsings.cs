@@ -1,4 +1,6 @@
-﻿global using System.Xml;
+﻿global using System.Collections.Concurrent;
+global using System.Diagnostics;
+global using System.Xml;
 global using System.Xml.Linq;
 global using CommandLine;
 global using NuGet.Common;

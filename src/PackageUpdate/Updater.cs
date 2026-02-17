@@ -1,5 +1,8 @@
 ﻿public static class Updater
 {
+    static ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> metadataCache = new(PackageCacheKeyComparer.Instance);
+    static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestVersionCache = new(PackageCacheKeyComparer.Instance);
+
     public static async Task Update(
         SourceCacheContext cache,
         string directoryPackagesPropsPath,
@@ -179,6 +182,12 @@
         List<PackageSource> sources,
         SourceCacheContext cache)
     {
+        var key = (package, currentVersion);
+        if (latestVersionCache.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
+
         IPackageSearchMetadata? latestMetadata = null;
 
         foreach (var source in sources)
@@ -212,6 +221,7 @@
             }
         }
 
+        latestVersionCache[key] = latestMetadata;
         return latestMetadata;
     }
 
@@ -221,6 +231,12 @@
         List<PackageSource> sources,
         SourceCacheContext cache)
     {
+        var key = (package, version);
+        if (metadataCache.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
+
         foreach (var source in sources)
         {
             var (_, metadataResource) = await RepositoryReader.Read(source);
@@ -233,10 +249,12 @@
 
             if (metadata != null)
             {
+                metadataCache[key] = metadata;
                 return metadata;
             }
         }
 
+        metadataCache[key] = null;
         return null;
     }
 
