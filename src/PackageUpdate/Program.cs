@@ -30,7 +30,7 @@ static async Task Inner(string directory, string? package, bool build)
         await DotnetStarter.Shutdown();
     }
 
-    Log.Information("Completed in {Elapsed}", totalStopwatch.Elapsed);
+    Log.Information("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
 }
 
 static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
@@ -72,10 +72,11 @@ static async Task ProcessSolution(SourceCacheContext cache, string solution, str
 
     var stopwatch = Stopwatch.StartNew();
     await Updater.Update(cache, props, package);
-    Log.Information("    Updated in {Elapsed}", stopwatch.Elapsed);
+    Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
 
     if (build)
     {
         await DotnetStarter.Build(solution);
     }
 }
+
