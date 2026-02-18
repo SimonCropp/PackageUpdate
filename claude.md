@@ -72,11 +72,11 @@ var packageVersions = xml.Descendants("PackageVersion")
 dotnet build src --configuration Release
 
 # Run tests
-dotnet test src --configuration Release --no-build --no-restore
+dotnet test --solution src/PackageUpdate.slnx --configuration Release --no-build --no-restore
 
 # Build and test in one go (from src directory)
 dotnet build src
-dotnet test src --no-build
+dotnet test --solution src/PackageUpdate.slnx --no-build
 
 # Install the tool locally for testing
 dotnet pack src/PackageUpdate/PackageUpdate.csproj
@@ -121,8 +121,8 @@ packageupdate --build
 ### Testing
 
 Tests use:
-- xUnit v3
-- Verify.XunitV3 for snapshot testing
+- TUnit
+- Verify.TUnit for snapshot testing
 - Located in `src/Tests/`
 
 ## Important Patterns
@@ -227,4 +227,4 @@ src/
 - Uses AppVeyor for builds
 - GitHub Actions for milestone releases and documentation
 - Builds with `dotnet build src --configuration Release`
-- Tests with `dotnet test src --configuration Release`
+- Tests with `dotnet test --solution src/PackageUpdate.slnx --configuration Release`
