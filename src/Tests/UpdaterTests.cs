@@ -1,6 +1,6 @@
-﻿public class UpdaterTests
+public class UpdaterTests
 {
-    [Fact]
+    [Test]
     public async Task UpdateAllPackages()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -25,7 +25,7 @@
         await Verify(result);
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateSinglePackage()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -50,7 +50,7 @@
         await Verify(result);
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateSinglePackage_CaseInsensitive()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -72,7 +72,7 @@
         await Verify(result);
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePackageNotFound()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -92,10 +92,10 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // File should be unchanged
-        Assert.Equal(content, result);
+        await Assert.That(result).IsEqualTo(content);
     }
 
-    [Fact]
+    [Test]
     public async Task PreservesFormatting()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -121,11 +121,11 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // Verify comments are preserved
-        Assert.Contains("<!-- This is a comment -->", result);
-        Assert.Contains("<!-- Testing packages -->", result);
+        await Assert.That(result).Contains("<!-- This is a comment -->");
+        await Assert.That(result).Contains("<!-- Testing packages -->");
     }
 
-    [Fact]
+    [Test]
     public async Task SkipsInvalidVersions()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -146,12 +146,12 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // Invalid version should remain unchanged
-        Assert.Contains("not-a-version", result);
+        await Assert.That(result).Contains("not-a-version");
     }
 
     static List<PackageSource> sources = [new("https://api.nuget.org/v3/index.json")];
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_StableToStable()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -163,12 +163,12 @@
             sources,
             cache);
 
-        Assert.NotNull(result);
-        Assert.True(result.Identity.Version > currentVersion);
-        Assert.False(result.Identity.Version.IsPrerelease);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.Identity.Version > currentVersion).IsTrue();
+        await Assert.That(result.Identity.Version.IsPrerelease).IsFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_PreReleaseToPreRelease()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -180,11 +180,11 @@
             sources,
             cache);
 
-        Assert.NotNull(result);
-        Assert.True(result.Identity.Version > currentVersion);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.Identity.Version > currentVersion).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_DoesNotDowngradeStableToPreRelease()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -198,11 +198,11 @@
 
         if (result != null)
         {
-            Assert.False(result.Identity.Version.IsPrerelease);
+            await Assert.That(result.Identity.Version.IsPrerelease).IsFalse();
         }
     }
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_PackageNotFound()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -214,10 +214,10 @@
             sources,
             cache);
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_AlreadyLatest()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -231,10 +231,10 @@
             sources,
             cache);
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_ReturnsMetadata()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -246,7 +246,7 @@
             sources,
             cache);
 
-        Assert.NotNull(result);
+        await Assert.That(result).IsNotNull();
 
         var metadata = new
         {
@@ -259,7 +259,7 @@
         await Verify(metadata);
     }
 
-    [Fact]
+    [Test]
     public async Task UsesLocalNuGetConfig()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -295,10 +295,10 @@
         var result = await File.ReadAllTextAsync(packagesPath);
 
         // Verify the package was updated (should have a newer version than 12.0.1)
-        Assert.DoesNotContain("Version=\"12.0.1\"", result);
+        await Assert.That(result).DoesNotContain("Version=\"12.0.1\"");
     }
 
-    [Fact]
+    [Test]
     public async Task WarnsAndReturnsWhenNoNuGetConfig()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -322,10 +322,10 @@
         var result = await File.ReadAllTextAsync(packagesPath);
 
         // Verify the package was updated (should have a newer version than 12.0.1)
-        Assert.DoesNotContain("Version=\"12.0.1\"", result);
+        await Assert.That(result).DoesNotContain("Version=\"12.0.1\"");
     }
 
-    [Fact]
+    [Test]
     public async Task UsesLocalNuGetConfigInHierarchy()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -361,10 +361,10 @@
         var result = await File.ReadAllTextAsync(directoryPath);
 
         // Verify the package was updated using the local config merged with hierarchy
-        Assert.DoesNotContain("Version=\"12.0.1\"", result);
+        await Assert.That(result).DoesNotContain("Version=\"12.0.1\"");
     }
 
-    [Fact]
+    [Test]
     public async Task GetLatestVersion_IgnoresUnlistedPackages()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -379,13 +379,13 @@
             cache);
 
         // Should find a listed version, skipping 1.0.0 (unlisted)
-        Assert.NotNull(result);
-        Assert.True(result.IsListed, "Returned package version should be listed");
-        Assert.NotEqual("1.0.0", result.Identity.Version.ToString());
-        Assert.True(result.Identity.Version > currentVersion);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.IsListed).IsTrue();
+        await Assert.That(result.Identity.Version.ToString()).IsNotEqualTo("1.0.0");
+        await Assert.That(result.Identity.Version > currentVersion).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateSkipsUnlistedVersions()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -424,19 +424,19 @@
         var packageVersion = doc.Descendants("PackageVersion")
             .FirstOrDefault(_ => _.Attribute("Include")?.Value == "YoloDev.Expecto.TestSdk");
 
-        Assert.NotNull(packageVersion);
+        await Assert.That(packageVersion).IsNotNull();
 
         var versionAttr = packageVersion.Attribute("Version")?.Value;
 
         // Should have updated, but NOT to the unlisted 1.0.0
-        Assert.NotEqual("0.1.0", versionAttr);
-        Assert.NotEqual("1.0.0", versionAttr);
+        await Assert.That(versionAttr).IsNotEqualTo("0.1.0");
+        await Assert.That(versionAttr).IsNotEqualTo("1.0.0");
 
-        Assert.True(NuGetVersion.TryParse(versionAttr, out var updatedVersion));
-        Assert.True(updatedVersion > NuGetVersion.Parse("0.1.0"));
+        await Assert.That(NuGetVersion.TryParse(versionAttr, out var updatedVersion)).IsTrue();
+        await Assert.That(updatedVersion! > NuGetVersion.Parse("0.1.0")).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateRespectsPinnedPackages()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -473,14 +473,14 @@
         var result = await File.ReadAllTextAsync(packagesPath);
 
         // Pinned package should not be updated
-        Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
-        Assert.Contains("Pinned=\"true\"", result);
+        await Assert.That(result).Contains("Newtonsoft.Json\" Version=\"12.0.1\"");
+        await Assert.That(result).Contains("Pinned=\"true\"");
 
         // Non-pinned package should be updated
-        Assert.DoesNotContain("NUnit\" Version=\"3.13.0\"", result);
+        await Assert.That(result).DoesNotContain("NUnit\" Version=\"3.13.0\"");
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateAllPackagesArePinned()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -501,12 +501,12 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // All packages should remain unchanged
-        Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
-        Assert.Contains("NUnit\" Version=\"3.13.0\"", result);
-        Assert.Contains("Pinned=\"true\"", result);
+        await Assert.That(result).Contains("Newtonsoft.Json\" Version=\"12.0.1\"");
+        await Assert.That(result).Contains("NUnit\" Version=\"3.13.0\"");
+        await Assert.That(result).Contains("Pinned=\"true\"");
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateSinglePinnedPackage()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -528,11 +528,11 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // Should still be pinned and not updated
-        Assert.Contains("Newtonsoft.Json\" Version=\"12.0.1\"", result);
-        Assert.Contains("Pinned=\"true\"", result);
+        await Assert.That(result).Contains("Newtonsoft.Json\" Version=\"12.0.1\"");
+        await Assert.That(result).Contains("Pinned=\"true\"");
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesPinAttributeFormat()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -554,14 +554,14 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // Verify comment is preserved
-        Assert.Contains("<!-- Important: keep this version locked -->", result);
+        await Assert.That(result).Contains("<!-- Important: keep this version locked -->");
 
         // Verify pinned package wasn't updated
-        Assert.Contains("System.ValueTuple\" Version=\"4.5.0\"", result);
-        Assert.Contains("Pinned=\"true\"", result);
+        await Assert.That(result).Contains("System.ValueTuple\" Version=\"4.5.0\"");
+        await Assert.That(result).Contains("Pinned=\"true\"");
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateOnlyUnpinnedPackagesUpdated()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -610,20 +610,20 @@
 
         // Pinned packages unchanged
         var newtonsoft = packages.First(_ => _.Id == "Newtonsoft.Json");
-        Assert.Equal("12.0.1", newtonsoft.Version);
-        Assert.Equal("true", newtonsoft.Pinned);
+        await Assert.That(newtonsoft.Version).IsEqualTo("12.0.1");
+        await Assert.That(newtonsoft.Pinned).IsEqualTo("true");
 
         var nunit = packages.First(_ => _.Id == "NUnit");
-        Assert.Equal("3.13.0", nunit.Version);
-        Assert.Equal("true", nunit.Pinned);
+        await Assert.That(nunit.Version).IsEqualTo("3.13.0");
+        await Assert.That(nunit.Pinned).IsEqualTo("true");
 
         // Unpinned package updated
         var xunit = packages.First(_ => _.Id == "xunit");
-        Assert.NotEqual("2.4.0", xunit.Version);
-        Assert.Null(xunit.Pinned);
+        await Assert.That(xunit.Version).IsNotEqualTo("2.4.0");
+        await Assert.That(xunit.Pinned).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesOriginalNewlineStyle()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -636,8 +636,8 @@
         var originalText = Encoding.UTF8.GetString(originalBytes);
 
         // Verify original has Unix newlines (\n) and not Windows newlines (\r\n)
-        Assert.Contains("\n", originalText);
-        Assert.DoesNotContain("\r\n", originalText);
+        await Assert.That(originalText).Contains("\n");
+        await Assert.That(originalText).DoesNotContain("\r\n");
 
         await Updater.Update(cache, tempFile.Path, null);
 
@@ -646,11 +646,11 @@
         var resultText = Encoding.UTF8.GetString(resultBytes);
 
         // Verify newline style is preserved (should still be Unix \n, not Windows \r\n)
-        Assert.Contains("\n", resultText);
-        Assert.DoesNotContain("\r\n", resultText);
+        await Assert.That(resultText).Contains("\n");
+        await Assert.That(resultText).DoesNotContain("\r\n");
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesWindowsNewlineStyle()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -663,7 +663,7 @@
         var originalText = Encoding.UTF8.GetString(originalBytes);
 
         // Verify original has Windows newlines (\r\n)
-        Assert.Contains("\r\n", originalText);
+        await Assert.That(originalText).Contains("\r\n");
 
         await Updater.Update(cache, tempFile.Path, null);
 
@@ -672,10 +672,10 @@
         var resultText = Encoding.UTF8.GetString(resultBytes);
 
         // Verify newline style is preserved (should still be Windows \r\n)
-        Assert.Contains("\r\n", resultText);
+        await Assert.That(resultText).Contains("\r\n");
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesTrailingNewline()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -686,16 +686,16 @@
 
         // Verify original ends with newline
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.Equal((byte)'\n', originalBytes[^1]);
+        await Assert.That(originalBytes[^1]).IsEqualTo((byte)'\n');
 
         await Updater.Update(cache, tempFile.Path, null);
 
         // Verify result still ends with newline
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.Equal((byte)'\n', resultBytes[^1]);
+        await Assert.That(resultBytes[^1]).IsEqualTo((byte)'\n');
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesNoTrailingNewline()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -706,18 +706,18 @@
 
         // Verify original does NOT end with newline
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.NotEqual((byte)'\n', originalBytes[^1]);
-        Assert.NotEqual((byte)'\r', originalBytes[^1]);
+        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte)'\n');
+        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte)'\r');
 
         await Updater.Update(cache, tempFile.Path, null);
 
         // Verify result still does NOT end with newline
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.NotEqual((byte)'\n', resultBytes[^1]);
-        Assert.NotEqual((byte)'\r', resultBytes[^1]);
+        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte)'\n');
+        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte)'\r');
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesTrailingCRLF()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -728,18 +728,18 @@
 
         // Verify original ends with \r\n
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.Equal((byte)'\n', originalBytes[^1]);
-        Assert.Equal((byte)'\r', originalBytes[^2]);
+        await Assert.That(originalBytes[^1]).IsEqualTo((byte)'\n');
+        await Assert.That(originalBytes[^2]).IsEqualTo((byte)'\r');
 
         await Updater.Update(cache, tempFile.Path, null);
 
         // Verify result still ends with \r\n
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.Equal((byte)'\n', resultBytes[^1]);
-        Assert.Equal((byte)'\r', resultBytes[^2]);
+        await Assert.That(resultBytes[^1]).IsEqualTo((byte)'\n');
+        await Assert.That(resultBytes[^2]).IsEqualTo((byte)'\r');
     }
 
-    [Fact]
+    [Test]
     public async Task UpdatePreservesNoTrailingNewlineWithCRLF()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -750,18 +750,18 @@
 
         // Verify original does NOT end with newline
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.NotEqual((byte)'\n', originalBytes[^1]);
-        Assert.NotEqual((byte)'\r', originalBytes[^1]);
+        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte)'\n');
+        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte)'\r');
 
         await Updater.Update(cache, tempFile.Path, null);
 
         // Verify result still does NOT end with newline
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        Assert.NotEqual((byte)'\n', resultBytes[^1]);
-        Assert.NotEqual((byte)'\r', resultBytes[^1]);
+        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte)'\n');
+        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte)'\r');
     }
 
-    [Fact]
+    [Test]
     public async Task MigratesDeprecatedPackageWithAlternative()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -790,15 +790,15 @@
             .ToList();
 
         // Original package should be migrated to the alternative
-        Assert.DoesNotContain(packages, _ => _.Id == "WindowsAzure.Storage");
+        await Assert.That(packages).DoesNotContain(_ => _.Id == "WindowsAzure.Storage");
 
         // Alternative package should exist
         var alternativePackage = packages.FirstOrDefault(_ => _.Id == "Azure.Storage.Common" || _.Id == "Azure.Storage.Blobs");
-        Assert.NotNull(alternativePackage);
-        Assert.NotNull(alternativePackage.Version);
+        await Assert.That(alternativePackage).IsNotNull();
+        await Assert.That(alternativePackage.Version).IsNotNull();
     }
 
-    [Fact]
+    [Test]
     public async Task SkipsMigrationWhenAlternativeAlreadyExists()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -822,7 +822,7 @@
         await Verify(result);
     }
 
-    [Fact]
+    [Test]
     public async Task PinnedDeprecatedPackageNotMigrated()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -853,12 +853,12 @@
 
         // Pinned package should not be migrated
         var pinnedPackage = packages.FirstOrDefault(_ => _.Id == "WindowsAzure.Storage");
-        Assert.NotNull(pinnedPackage);
-        Assert.Equal("9.3.3", pinnedPackage.Version);
-        Assert.Equal("true", pinnedPackage.Pinned);
+        await Assert.That(pinnedPackage).IsNotNull();
+        await Assert.That(pinnedPackage.Version).IsEqualTo("9.3.3");
+        await Assert.That(pinnedPackage.Pinned).IsEqualTo("true");
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationPreservesFormattingAndComments()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -881,14 +881,14 @@
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // Verify comments are preserved
-        Assert.Contains("<!-- Important packages -->", result);
-        Assert.Contains("<!-- This one is deprecated -->", result);
+        await Assert.That(result).Contains("<!-- Important packages -->");
+        await Assert.That(result).Contains("<!-- This one is deprecated -->");
 
         // Verify the package was migrated
-        Assert.DoesNotContain("WindowsAzure.Storage", result);
+        await Assert.That(result).DoesNotContain("WindowsAzure.Storage");
     }
 
-    [Fact]
+    [Test]
     public async Task MigratedPackageNeverGetsZeroVersion()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -921,16 +921,16 @@
         // (open-ended range like "[,)"), we use the latest version instead
         foreach (var package in packages)
         {
-            Assert.NotNull(package.Version);
-            Assert.NotEqual("0.0.0", package.Version);
+            await Assert.That(package.Version).IsNotNull();
+            await Assert.That(package.Version).IsNotEqualTo("0.0.0");
 
             // Verify it's a valid version
-            Assert.True(NuGetVersion.TryParse(package.Version, out var version));
-            Assert.True(version > new NuGetVersion(0, 0, 0));
+            await Assert.That(NuGetVersion.TryParse(package.Version, out var version)).IsTrue();
+            await Assert.That(version! > new NuGetVersion(0, 0, 0)).IsTrue();
         }
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationUpdatesCsprojFiles()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -967,13 +967,12 @@
         var csprojResult = await File.ReadAllTextAsync(csprojPath);
 
         // Csproj should have the new package name
-        Assert.DoesNotContain("WindowsAzure.Storage", csprojResult);
-        Assert.True(
-            csprojResult.Contains("Azure.Storage.Common") || csprojResult.Contains("Azure.Storage.Blobs"),
-            "Csproj should contain the migrated package name");
+        await Assert.That(csprojResult).DoesNotContain("WindowsAzure.Storage");
+        await Assert.That(
+            csprojResult.Contains("Azure.Storage.Common") || csprojResult.Contains("Azure.Storage.Blobs")).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationUpdatesMultipleCsprojFiles()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1020,14 +1019,14 @@
         var csprojResult2 = await File.ReadAllTextAsync(csprojPath2);
 
         // Both csproj files should have the new package name
-        Assert.DoesNotContain("WindowsAzure.Storage", csprojResult1);
-        Assert.DoesNotContain("WindowsAzure.Storage", csprojResult2);
+        await Assert.That(csprojResult1).DoesNotContain("WindowsAzure.Storage");
+        await Assert.That(csprojResult2).DoesNotContain("WindowsAzure.Storage");
 
         // Second csproj should still have Newtonsoft.Json
-        Assert.Contains("Newtonsoft.Json", csprojResult2);
+        await Assert.That(csprojResult2).Contains("Newtonsoft.Json");
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationUpdatesCsprojInSubdirectory()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1063,10 +1062,10 @@
         var csprojResult = await File.ReadAllTextAsync(csprojPath);
 
         // Csproj in subdirectory should have the new package name
-        Assert.DoesNotContain("WindowsAzure.Storage", csprojResult);
+        await Assert.That(csprojResult).DoesNotContain("WindowsAzure.Storage");
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationPreservesCsprojFormatting()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1105,11 +1104,11 @@
         var csprojResult = await File.ReadAllTextAsync(csprojPath);
 
         // Comments should be preserved
-        Assert.Contains("<!-- Project comment -->", csprojResult);
-        Assert.Contains("<!-- Package references -->", csprojResult);
+        await Assert.That(csprojResult).Contains("<!-- Project comment -->");
+        await Assert.That(csprojResult).Contains("<!-- Package references -->");
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationDoesNotModifyUnrelatedCsproj()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1145,10 +1144,10 @@
         var csprojResult = await File.ReadAllTextAsync(csprojPath);
 
         // Csproj should be unchanged since it doesn't reference the migrated package
-        Assert.Equal(originalCsproj, csprojResult);
+        await Assert.That(csprojResult).IsEqualTo(originalCsproj);
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationHandlesCaseInsensitivePackageNames()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1182,10 +1181,10 @@
         var csprojResult = await File.ReadAllTextAsync(csprojPath);
 
         // Csproj should have the new package name (case-insensitive match)
-        Assert.DoesNotContain("windowsazure.storage", csprojResult, StringComparison.OrdinalIgnoreCase);
+        await Assert.That(csprojResult).DoesNotContain("windowsazure.storage", StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [Test]
     public async Task MigrationPreservesCsprojNewlineStyle()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1214,11 +1213,11 @@
         var resultText = Encoding.UTF8.GetString(resultBytes);
 
         // Verify Unix newline style is preserved
-        Assert.Contains("\n", resultText);
-        Assert.DoesNotContain("\r\n", resultText);
+        await Assert.That(resultText).Contains("\n");
+        await Assert.That(resultText).DoesNotContain("\r\n");
     }
 
-    [Fact]
+    [Test]
     public async Task NoMigrationDoesNotUpdateCsprojFiles()
     {
         using var cache = new SourceCacheContext { RefreshMemoryCache = true };
@@ -1254,6 +1253,6 @@
         var csprojResult = await File.ReadAllTextAsync(csprojPath);
 
         // Csproj should be unchanged when no migration occurs
-        Assert.Equal(originalCsproj, csprojResult);
+        await Assert.That(csprojResult).IsEqualTo(originalCsproj);
     }
 }

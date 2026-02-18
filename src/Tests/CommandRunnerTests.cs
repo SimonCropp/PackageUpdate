@@ -1,81 +1,81 @@
-﻿public class CommandRunnerTests
+public class CommandRunnerTests
 {
     string? targetDirectory;
     string? package;
     bool build;
 
-    [Fact]
+    [Test]
     public async Task Empty()
     {
         await CommandRunner.RunCommand(Capture);
-        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
-        Assert.Null(package);
-        Assert.False(build);
+        await Assert.That(targetDirectory).IsEqualTo(Environment.CurrentDirectory);
+        await Assert.That(package).IsNull();
+        await Assert.That(build).IsFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task SingleUnNamedArg()
     {
         await CommandRunner.RunCommand(Capture, "dir");
-        Assert.Equal("dir", targetDirectory);
-        Assert.Null(package);
+        await Assert.That(targetDirectory).IsEqualTo("dir");
+        await Assert.That(package).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task TargetDirectoryShort()
     {
         await CommandRunner.RunCommand(Capture, "-t", "dir");
-        Assert.Equal(Path.GetFullPath("dir"), targetDirectory);
-        Assert.Null(package);
+        await Assert.That(targetDirectory).IsEqualTo(Path.GetFullPath("dir"));
+        await Assert.That(package).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task TargetDirectoryLong()
     {
         await CommandRunner.RunCommand(Capture, "--target-directory", "dir");
-        Assert.Equal(Path.GetFullPath("dir"), targetDirectory);
-        Assert.Null(package);
+        await Assert.That(targetDirectory).IsEqualTo(Path.GetFullPath("dir"));
+        await Assert.That(package).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task BuildShort()
     {
         await CommandRunner.RunCommand(Capture, "-b");
-        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
-        Assert.True(build);
+        await Assert.That(targetDirectory).IsEqualTo(Environment.CurrentDirectory);
+        await Assert.That(build).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task BuildLong()
     {
         await CommandRunner.RunCommand(Capture, "--build");
-        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
-        Assert.True(build);
+        await Assert.That(targetDirectory).IsEqualTo(Environment.CurrentDirectory);
+        await Assert.That(build).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task PackageShort()
     {
         await CommandRunner.RunCommand(Capture, "-p", "packageName");
-        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
-        Assert.Equal("packageName", package);
+        await Assert.That(targetDirectory).IsEqualTo(Environment.CurrentDirectory);
+        await Assert.That(package).IsEqualTo("packageName");
     }
 
-    [Fact]
+    [Test]
     public async Task PackageLong()
     {
         await CommandRunner.RunCommand(Capture, "--package", "packageName");
-        Assert.Equal(Environment.CurrentDirectory, targetDirectory);
-        Assert.Equal("packageName", package);
+        await Assert.That(targetDirectory).IsEqualTo(Environment.CurrentDirectory);
+        await Assert.That(package).IsEqualTo("packageName");
     }
 
-    [Fact]
+    [Test]
     public async Task All()
     {
         await CommandRunner.RunCommand(Capture, "--target-directory", "dir", "--package", "packageName", "--build");
-        Assert.Equal(Path.GetFullPath("dir"), targetDirectory);
-        Assert.Equal("packageName", package);
-        Assert.True(build);
+        await Assert.That(targetDirectory).IsEqualTo(Path.GetFullPath("dir"));
+        await Assert.That(package).IsEqualTo("packageName");
+        await Assert.That(build).IsTrue();
     }
 
     Task Capture(string targetDirectory, string? package, bool build)

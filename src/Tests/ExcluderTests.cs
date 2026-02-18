@@ -1,11 +1,11 @@
-﻿public class ExcluderTests
+public class ExcluderTests
 {
-    [Fact]
-    public void Simple()
+    [Test]
+    public async Task Simple()
     {
         Environment.SetEnvironmentVariable("PackageUpdateIgnores", "ignore, otherIgnore");
-        Assert.True(Excluder.ShouldExclude("SolutionToIgnore.sln"));
-        Assert.True(Excluder.ShouldExclude("SolutionOtherIgnore.sln"));
-        Assert.False(Excluder.ShouldExclude("Solution.sln"));
+        await Assert.That(Excluder.ShouldExclude("SolutionToIgnore.sln")).IsTrue();
+        await Assert.That(Excluder.ShouldExclude("SolutionOtherIgnore.sln")).IsTrue();
+        await Assert.That(Excluder.ShouldExclude("Solution.sln")).IsFalse();
     }
 }

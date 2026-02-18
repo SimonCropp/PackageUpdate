@@ -2,79 +2,79 @@ public class PackageCacheKeyComparerTests
 {
     static PackageCacheKeyComparer comparer = PackageCacheKeyComparer.Instance;
 
-    [Fact]
-    public void Equals_SamePackageAndVersion()
+    [Test]
+    public async Task Equals_SamePackageAndVersion()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
 
-        Assert.True(comparer.Equals(x, y));
+        await Assert.That(comparer.Equals(x, y)).IsTrue();
     }
 
-    [Fact]
-    public void Equals_DifferentCase()
+    [Test]
+    public async Task Equals_DifferentCase()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("newtonsoft.json", NuGetVersion.Parse("13.0.1"));
 
-        Assert.True(comparer.Equals(x, y));
+        await Assert.That(comparer.Equals(x, y)).IsTrue();
     }
 
-    [Fact]
-    public void Equals_DifferentVersion()
+    [Test]
+    public async Task Equals_DifferentVersion()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("Newtonsoft.Json", NuGetVersion.Parse("12.0.1"));
 
-        Assert.False(comparer.Equals(x, y));
+        await Assert.That(comparer.Equals(x, y)).IsFalse();
     }
 
-    [Fact]
-    public void Equals_DifferentPackage()
+    [Test]
+    public async Task Equals_DifferentPackage()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("NUnit", NuGetVersion.Parse("13.0.1"));
 
-        Assert.False(comparer.Equals(x, y));
+        await Assert.That(comparer.Equals(x, y)).IsFalse();
     }
 
-    [Fact]
-    public void GetHashCode_SameForDifferentCase()
+    [Test]
+    public async Task GetHashCode_SameForDifferentCase()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("newtonsoft.json", NuGetVersion.Parse("13.0.1"));
 
-        Assert.Equal(comparer.GetHashCode(x), comparer.GetHashCode(y));
+        await Assert.That(comparer.GetHashCode(x)).IsEqualTo(comparer.GetHashCode(y));
     }
 
-    [Fact]
-    public void GetHashCode_DifferentForDifferentVersion()
+    [Test]
+    public async Task GetHashCode_DifferentForDifferentVersion()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("Newtonsoft.Json", NuGetVersion.Parse("12.0.1"));
 
-        Assert.NotEqual(comparer.GetHashCode(x), comparer.GetHashCode(y));
+        await Assert.That(comparer.GetHashCode(x)).IsNotEqualTo(comparer.GetHashCode(y));
     }
 
-    [Fact]
-    public void GetHashCode_DifferentForDifferentPackage()
+    [Test]
+    public async Task GetHashCode_DifferentForDifferentPackage()
     {
         var x = ("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"));
         var y = ("NUnit", NuGetVersion.Parse("13.0.1"));
 
-        Assert.NotEqual(comparer.GetHashCode(x), comparer.GetHashCode(y));
+        await Assert.That(comparer.GetHashCode(x)).IsNotEqualTo(comparer.GetHashCode(y));
     }
 
-    [Fact]
-    public void WorksWithDictionary()
+    [Test]
+    public async Task WorksWithDictionary()
     {
         var dictionary = new Dictionary<(string Package, NuGetVersion Version), string>(comparer)
         {
             [("Newtonsoft.Json", NuGetVersion.Parse("13.0.1"))] = "first"
         };
 
-        Assert.True(dictionary.ContainsKey(("newtonsoft.json", NuGetVersion.Parse("13.0.1"))));
-        Assert.True(dictionary.ContainsKey(("NEWTONSOFT.JSON", NuGetVersion.Parse("13.0.1"))));
-        Assert.False(dictionary.ContainsKey(("Newtonsoft.Json", NuGetVersion.Parse("12.0.1"))));
+        await Assert.That(dictionary.ContainsKey(("newtonsoft.json", NuGetVersion.Parse("13.0.1")))).IsTrue();
+        await Assert.That(dictionary.ContainsKey(("NEWTONSOFT.JSON", NuGetVersion.Parse("13.0.1")))).IsTrue();
+        await Assert.That(dictionary.ContainsKey(("Newtonsoft.Json", NuGetVersion.Parse("12.0.1")))).IsFalse();
     }
 }
