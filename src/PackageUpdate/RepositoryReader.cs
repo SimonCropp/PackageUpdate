@@ -1,6 +1,6 @@
 ﻿public static class RepositoryReader
 {
-    static Dictionary<PackageSource, (SourceRepository, PackageMetadataResource)> cache = [];
+    static ConcurrentDictionary<PackageSource, (SourceRepository, PackageMetadataResource)> cache = [];
     static Repository.RepositoryFactory factory = Repository.Factory;
 
     public static async Task<(SourceRepository repository, PackageMetadataResource metadataResource)> Read(PackageSource source)

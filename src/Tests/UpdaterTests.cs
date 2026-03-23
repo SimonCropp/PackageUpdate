@@ -1255,4 +1255,23 @@ public class UpdaterTests
         // Csproj should be unchanged when no migration occurs
         await Assert.That(csprojResult).IsEqualTo(originalCsproj);
     }
+
+    [Test]
+    public async Task ConcurrentRepositoryReaderAccessDoesNotThrow()
+    {
+        var source = new PackageSource("https://api.nuget.org/v3/index.json");
+
+        var tasks = Enumerable.Range(0, 20)
+            .Select(_ => RepositoryReader.Read(source));
+
+        var results = await Task.WhenAll(tasks);
+
+        await Assert.That(results).Count().IsEqualTo(20);
+
+        foreach (var (repository, metadataResource) in results)
+        {
+            await Assert.That(repository).IsNotNull();
+            await Assert.That(metadataResource).IsNotNull();
+        }
+    }
 }
