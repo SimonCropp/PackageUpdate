@@ -9,9 +9,11 @@
     <Description>.NET Core Global Tool that updates packages for all solutions in a directory</Description>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <PackageReadmeFile>nuget.md</PackageReadmeFile>
     <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="nuget.md" Pack="true" PackagePath="" />
     <PackageReference Include="CommandLineParser" />
     <PackageReference Include="NuGet.Protocol" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
