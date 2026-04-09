@@ -314,12 +314,8 @@
         // Perform migration: update Include attribute and Version
         packageElement.SetAttributeValue("Include", alternatePackage.PackageId);
 
-        // Use the minimum version from the range if specified and greater than 0.0.0,
-        // otherwise use the latest version we found
-        var minVersion = alternatePackage.Range?.MinVersion;
-        var targetVersion = minVersion != null && minVersion > new NuGetVersion(0, 0, 0)
-            ? minVersion
-            : alternateMetadata.Identity.Version;
+        // Always use the latest version of the alternate package
+        var targetVersion = alternateMetadata.Identity.Version;
         packageElement.SetAttributeValue("Version", targetVersion.ToString());
 
         Log.Information(

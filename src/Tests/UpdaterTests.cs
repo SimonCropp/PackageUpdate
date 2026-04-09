@@ -1257,6 +1257,47 @@ public class UpdaterTests
     }
 
     [Test]
+    public async Task MigrationUsesLatestVersionNotMinVersion()
+    {
+        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+        var doc = XDocument.Parse(result);
+
+        var package = doc.Descendants("PackageVersion").Single();
+        var id = package.Attribute("Include")?.Value;
+        var version = package.Attribute("Version")?.Value;
+
+        // Should be migrated to the alternative package
+        await Assert.That(id).IsNotEqualTo("WindowsAzure.Storage");
+
+        // The migrated version should be the latest version of the alternate package,
+        // not the min version from the deprecation range
+        await Assert.That(NuGetVersion.TryParse(version, out var migratedVersion)).IsTrue();
+
+        var latestMetadata = await Updater.GetLatestVersion(
+            id!,
+            new NuGetVersion(0, 0, 0),
+            sources,
+            cache);
+
+        await Assert.That(latestMetadata).IsNotNull();
+        await Assert.That(migratedVersion!).IsEqualTo(latestMetadata!.Identity.Version);
+    }
+
+    [Test]
     public async Task ConcurrentRepositoryReaderAccessDoesNotThrow()
     {
         var source = new PackageSource("https://api.nuget.org/v3/index.json");
