@@ -4,6 +4,8 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
 
 Only solutions using [Central Package Management (CPM)](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management) are supported.
 
+See the [full documentation](https://github.com/SimonCropp/PackageUpdate#readme) for more details.
+
 
 ## Installation
 
