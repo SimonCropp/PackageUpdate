@@ -22,6 +22,12 @@ static async Task Inner(string directory, string? package, bool build)
     };
     foreach (var solution in FileSystem.FindSolutions(directory))
     {
+        if (ForkDetector.ShouldSkip(directory, solution))
+        {
+            Log.Information("  Skipping fork: {Solution}", solution);
+            continue;
+        }
+
         await TryProcessSolution(cache, solution, package, build);
     }
 

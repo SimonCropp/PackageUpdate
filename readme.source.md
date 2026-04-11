@@ -113,6 +113,19 @@ setx PackageUpdateIgnores "AspNetCore,EntityFrameworkCore"
 The value is comma separated.
 
 
+## Fork Skipping
+
+When scanning a parent directory that contains multiple repositories, forked repositories are automatically skipped. A repository is detected as a fork if it has a git remote named `upstream` in its `.git/config`.
+
+To update a forked repository, target its directory directly:
+
+```ps
+packageupdate C:\Code\MyForkedRepo
+```
+
+This ensures forks are only updated intentionally, preventing unexpected changes to repositories you don't own.
+
+
 ## Add to Windows Explorer
 
 Use [context-menu.reg](/src/context-menu.reg) to add PackageUpdate to the Windows Explorer context menu.
