@@ -93,9 +93,10 @@ packageupdate --build
 ### Core Workflow (Program.cs)
 
 1. **Solution Discovery** (`FileSystem.FindSolutions`): Recursively scans target directory for `*.sln` and `*.slnx` files
-2. **Solution Validation**: Checks for `Directory.Packages.props` (CPM requirement) and applies exclusion rules
-3. **Package Update** (`Updater.Update`): Updates package versions in `Directory.Packages.props`
-4. **Optional Build** (`DotnetStarter.Build`): Builds solution after update if `--build` flag is provided
+2. **Fork Detection** (`ForkDetector.ShouldSkip`): Skips forked repos (those with an "upstream" remote) unless explicitly targeted
+3. **Solution Validation**: Checks for `Directory.Packages.props` (CPM requirement) and applies exclusion rules
+4. **Package Update** (`Updater.Update`): Updates package versions in `Directory.Packages.props`
+5. **Optional Build** (`DotnetStarter.Build`): Builds solution after update if `--build` flag is provided
 
 ### Key Components
 
@@ -109,6 +110,8 @@ packageupdate --build
   - Only considers pre-release versions when current version is pre-release
 
 - **PackageSourceReader.cs**: Reads NuGet sources from NuGet.config hierarchy using NuGet settings infrastructure
+
+- **ForkDetector.cs**: Detects forked git repos by checking for an "upstream" remote in `.git/config`. Skips forks found via recursive scanning; allows forks when explicitly targeted
 
 - **Excluder.cs**: Solution filtering via `PackageUpdateIgnores` environment variable (comma-separated list)
 
