@@ -367,7 +367,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_IgnoresUnlistedPackages()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         // YoloDev.Expecto.TestSdk v1.0.0 is unlisted
         // Start from a version before 1.0.0 to see if it skips the unlisted version
         var currentVersion = NuGetVersion.Parse("0.1.0");
@@ -388,7 +391,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdateSkipsUnlistedVersions()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
@@ -399,6 +401,10 @@ public class UpdaterTests
               </packageSources>
             </configuration>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         var packages =
             """
