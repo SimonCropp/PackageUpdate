@@ -28,7 +28,10 @@ public class UpdaterTests
     [Test]
     public async Task UpdateSinglePackage()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var content =
             """
             <Project>
@@ -53,7 +56,10 @@ public class UpdaterTests
     [Test]
     public async Task UpdateSinglePackage_CaseInsensitive()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var content =
             """
             <Project>
@@ -75,7 +81,10 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePackageNotFound()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var content =
             """
             <Project>
@@ -98,7 +107,10 @@ public class UpdaterTests
     [Test]
     public async Task PreservesFormatting()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var content =
             """
             <Project>
