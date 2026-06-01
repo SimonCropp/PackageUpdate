@@ -288,6 +288,7 @@ public class UpdaterTests
         {
             result.Identity.Id,
             Version = result.Identity.Version.ToString(),
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             HasVersion = result.Identity.Version != null,
             result.Identity.Version?.IsPrerelease
         };
@@ -767,7 +768,10 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesNoTrailingNewline()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         // Content WITHOUT trailing newline
         var content = "<Project>\n  <ItemGroup>\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\n  </ItemGroup>\n</Project>";
 
@@ -789,7 +793,10 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesTrailingCRLF()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         // Content WITH trailing CRLF
         var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>\r\n";
 
@@ -811,7 +818,10 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesNoTrailingNewlineWithCRLF()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         // Content with CRLF style but WITHOUT trailing newline
         var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>";
 
@@ -833,7 +843,6 @@ public class UpdaterTests
     [Test]
     public async Task MigratesDeprecatedPackageWithAlternative()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -842,6 +851,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -870,7 +883,6 @@ public class UpdaterTests
     [Test]
     public async Task SkipsMigrationWhenAlternativeAlreadyExists()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -880,6 +892,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -894,7 +910,6 @@ public class UpdaterTests
     [Test]
     public async Task PinnedDeprecatedPackageNotMigrated()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -903,6 +918,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -930,7 +949,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationPreservesFormattingAndComments()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -942,6 +960,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -960,7 +982,6 @@ public class UpdaterTests
     [Test]
     public async Task MigratedPackageNeverGetsZeroVersion()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -969,6 +990,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
@@ -1002,7 +1027,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUpdatesCsprojFiles()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1023,6 +1047,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1044,7 +1072,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUpdatesMultipleCsprojFiles()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1072,6 +1099,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1098,7 +1129,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUpdatesCsprojInSubdirectory()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1116,6 +1146,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1137,7 +1171,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationPreservesCsprojFormatting()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1160,6 +1193,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1180,7 +1217,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationDoesNotModifyUnrelatedCsproj()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1198,6 +1234,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1219,7 +1259,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationHandlesCaseInsensitivePackageNames()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1237,6 +1276,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1256,7 +1299,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationPreservesCsprojNewlineStyle()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1269,6 +1311,10 @@ public class UpdaterTests
         // Use Unix newlines
         var csproj = "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <ItemGroup>\n    <PackageReference Include=\"WindowsAzure.Storage\" />\n  </ItemGroup>\n</Project>\n";
 
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
         var csprojPath = Path.Combine(directory, "MyProject.csproj");
@@ -1289,7 +1335,6 @@ public class UpdaterTests
     [Test]
     public async Task NoMigrationDoesNotUpdateCsprojFiles()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1307,6 +1352,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var directory = new TempDirectory();
         var packagesPath = Path.Combine(directory, "Directory.Packages.props");
@@ -1328,7 +1377,6 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUsesLatestVersionNotMinVersion()
     {
-        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -1337,6 +1385,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
