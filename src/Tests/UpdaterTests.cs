@@ -493,6 +493,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(packages);
 
@@ -518,7 +522,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
         {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(packages);
 
