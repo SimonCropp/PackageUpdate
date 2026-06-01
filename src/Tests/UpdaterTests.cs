@@ -262,7 +262,10 @@ public class UpdaterTests
     [Test]
     public async Task UsesLocalNuGetConfig()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
@@ -301,7 +304,10 @@ public class UpdaterTests
     [Test]
     public async Task WarnsAndReturnsWhenNoNuGetConfig()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var packages =
             """
             <Project>
@@ -328,7 +334,10 @@ public class UpdaterTests
     [Test]
     public async Task UsesLocalNuGetConfigInHierarchy()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
