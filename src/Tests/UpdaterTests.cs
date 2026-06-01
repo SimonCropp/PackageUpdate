@@ -1150,7 +1150,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationHandlesCaseInsensitivePackageNames()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1187,7 +1187,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationPreservesCsprojNewlineStyle()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1220,7 +1220,7 @@ public class UpdaterTests
     [Test]
     public async Task NoMigrationDoesNotUpdateCsprojFiles()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1259,7 +1259,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUsesLatestVersionNotMinVersion()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
