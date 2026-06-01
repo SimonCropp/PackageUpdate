@@ -1029,7 +1029,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUpdatesCsprojInSubdirectory()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1068,7 +1068,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationPreservesCsprojFormatting()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -1111,7 +1111,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationDoesNotModifyUnrelatedCsproj()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
