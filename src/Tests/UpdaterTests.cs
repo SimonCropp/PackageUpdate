@@ -509,7 +509,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdateSinglePinnedPackage()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -519,6 +518,7 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        {
 
         using var tempFile = await TempFile.CreateText(packages);
 
