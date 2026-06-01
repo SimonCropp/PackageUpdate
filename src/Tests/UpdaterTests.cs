@@ -546,6 +546,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(packages);
 
@@ -749,7 +753,7 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesNoTrailingNewlineWithCRLF()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         // Content with CRLF style but WITHOUT trailing newline
         var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>";
 
