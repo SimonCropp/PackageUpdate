@@ -678,15 +678,18 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesTrailingNewline()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         // Content WITH trailing newline
         var content = "<Project>\n  <ItemGroup>\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\n  </ItemGroup>\n</Project>\n";
 
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         using var tempFile = await TempFile.CreateText(content);
 
         // Verify original ends with newline
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        await Assert.That(originalBytes[^1]).IsEqualTo((byte)'\n');
+        await Assert.That(originalBytes[^1]).IsEqualTo((byte) '\n');
 
         await Updater.Update(cache, tempFile.Path, null);
 
