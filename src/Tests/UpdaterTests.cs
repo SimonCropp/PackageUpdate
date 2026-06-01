@@ -728,15 +728,15 @@ public class UpdaterTests
 
         // Verify original ends with \r\n
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        await Assert.That(originalBytes[^1]).IsEqualTo((byte)'\n');
-        await Assert.That(originalBytes[^2]).IsEqualTo((byte)'\r');
+        await Assert.That(originalBytes[^1]).IsEqualTo((byte) '\n');
+        await Assert.That(originalBytes[^2]).IsEqualTo((byte) '\r');
 
         await Updater.Update(cache, tempFile.Path, null);
 
         // Verify result still ends with \r\n
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        await Assert.That(resultBytes[^1]).IsEqualTo((byte)'\n');
-        await Assert.That(resultBytes[^2]).IsEqualTo((byte)'\r');
+        await Assert.That(resultBytes[^1]).IsEqualTo((byte) '\n');
+        await Assert.That(resultBytes[^2]).IsEqualTo((byte) '\r');
     }
 
     [Test]
