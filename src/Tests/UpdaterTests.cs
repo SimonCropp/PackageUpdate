@@ -450,6 +450,10 @@ public class UpdaterTests
               </packageSources>
             </configuration>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         var packages =
             """
@@ -483,7 +487,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdateAllPackagesArePinned()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -542,7 +545,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesPinAttributeFormat()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var packages =
             """
             <Project>
@@ -575,7 +577,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdateOnlyUnpinnedPackagesUpdated()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
