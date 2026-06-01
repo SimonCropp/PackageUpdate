@@ -706,15 +706,15 @@ public class UpdaterTests
 
         // Verify original does NOT end with newline
         var originalBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte)'\n');
-        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte)'\r');
+        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte) '\n');
+        await Assert.That(originalBytes[^1]).IsNotEqualTo((byte) '\r');
 
         await Updater.Update(cache, tempFile.Path, null);
 
         // Verify result still does NOT end with newline
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte)'\n');
-        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte)'\r');
+        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte) '\n');
+        await Assert.That(resultBytes[^1]).IsNotEqualTo((byte) '\r');
     }
 
     [Test]
