@@ -128,7 +128,10 @@ public class UpdaterTests
     [Test]
     public async Task SkipsInvalidVersions()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var content =
             """
             <Project>
@@ -154,7 +157,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_StableToStable()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var currentVersion = NuGetVersion.Parse("12.0.1");
 
         var result = await Updater.GetLatestVersion(
@@ -171,7 +177,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_PreReleaseToPreRelease()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var currentVersion = NuGetVersion.Parse("1.0.0-beta.1");
 
         var result = await Updater.GetLatestVersion(
@@ -187,7 +196,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_DoesNotDowngradeStableToPreRelease()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var currentVersion = NuGetVersion.Parse("13.0.1");
 
         var result = await Updater.GetLatestVersion(
