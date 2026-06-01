@@ -764,7 +764,7 @@ public class UpdaterTests
     [Test]
     public async Task MigratesDeprecatedPackageWithAlternative()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -793,7 +793,7 @@ public class UpdaterTests
         await Assert.That(packages).DoesNotContain(_ => _.Id == "WindowsAzure.Storage");
 
         // Alternative package should exist
-        var alternativePackage = packages.FirstOrDefault(_ => _.Id == "Azure.Storage.Common" || _.Id == "Azure.Storage.Blobs");
+        var alternativePackage = packages.FirstOrDefault(_ => _.Id is "Azure.Storage.Common" or "Azure.Storage.Blobs");
         await Assert.That(alternativePackage).IsNotNull();
         await Assert.That(alternativePackage.Version).IsNotNull();
     }
@@ -801,7 +801,7 @@ public class UpdaterTests
     [Test]
     public async Task SkipsMigrationWhenAlternativeAlreadyExists()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -825,7 +825,7 @@ public class UpdaterTests
     [Test]
     public async Task PinnedDeprecatedPackageNotMigrated()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -861,7 +861,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationPreservesFormattingAndComments()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -891,7 +891,7 @@ public class UpdaterTests
     [Test]
     public async Task MigratedPackageNeverGetsZeroVersion()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var content =
             """
             <Project>
@@ -933,7 +933,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUpdatesCsprojFiles()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
@@ -975,7 +975,7 @@ public class UpdaterTests
     [Test]
     public async Task MigrationUpdatesMultipleCsprojFiles()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         var directoryPackages =
             """
             <Project>
