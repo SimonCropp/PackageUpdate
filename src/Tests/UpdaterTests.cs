@@ -3,7 +3,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdateAllPackages()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var content =
             """
             <Project>
@@ -16,6 +15,10 @@ public class UpdaterTests
               </ItemGroup>
             </Project>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         using var tempFile = await TempFile.CreateText(content);
 
