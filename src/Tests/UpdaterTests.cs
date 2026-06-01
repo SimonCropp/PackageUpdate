@@ -205,7 +205,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_PackageNotFound()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var currentVersion = NuGetVersion.Parse("1.0.0");
 
         var result = await Updater.GetLatestVersion(
@@ -220,7 +223,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_AlreadyLatest()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         // Use a very high version number
         var currentVersion = NuGetVersion.Parse("999.999.999");
@@ -237,7 +243,10 @@ public class UpdaterTests
     [Test]
     public async Task GetLatestVersion_ReturnsMetadata()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
         var currentVersion = NuGetVersion.Parse("12.0.1");
 
         var result = await Updater.GetLatestVersion(
@@ -454,7 +463,6 @@ public class UpdaterTests
     [Test]
     public async Task UpdateRespectsPinnedPackages()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
         var nugetConfig =
             """
             <?xml version="1.0" encoding="utf-8"?>
