@@ -575,6 +575,10 @@ public class UpdaterTests
               </packageSources>
             </configuration>
             """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
 
         var directoryPackages =
             """
@@ -695,13 +699,13 @@ public class UpdaterTests
 
         // Verify result still ends with newline
         var resultBytes = await File.ReadAllBytesAsync(tempFile.Path);
-        await Assert.That(resultBytes[^1]).IsEqualTo((byte)'\n');
+        await Assert.That(resultBytes[^1]).IsEqualTo((byte) '\n');
     }
 
     [Test]
     public async Task UpdatePreservesNoTrailingNewline()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         // Content WITHOUT trailing newline
         var content = "<Project>\n  <ItemGroup>\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\n  </ItemGroup>\n</Project>";
 
@@ -723,7 +727,7 @@ public class UpdaterTests
     [Test]
     public async Task UpdatePreservesTrailingCRLF()
     {
-        using var cache = new SourceCacheContext { RefreshMemoryCache = true };
+        using var cache = new SourceCacheContext {RefreshMemoryCache = true};
         // Content WITH trailing CRLF
         var content = "<Project>\r\n  <ItemGroup>\r\n    <PackageVersion Include=\"System.ValueTuple\" Version=\"4.5.0\" Pinned=\"true\" />\r\n  </ItemGroup>\r\n</Project>\r\n";
 
