@@ -645,9 +645,9 @@ public class UpdaterTests
             """
             <Project>
               <ItemGroup>
-                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="true" />
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
                 <PackageVersion Include="NUnit" Version="3.13.0" Pinned="true" />
-                <PackageVersion Include="xunit" Version="2.4.0" />
+                <PackageVersion Include="xunit" Version="2.4.0" Pinned="true" />
               </ItemGroup>
             </Project>
             """;
@@ -673,19 +673,19 @@ public class UpdaterTests
             })
             .ToList();
 
-        // Pinned packages unchanged
-        var newtonsoft = packages.First(_ => _.Id == "Newtonsoft.Json");
-        await Assert.That(newtonsoft.Version).IsEqualTo("12.0.1");
-        await Assert.That(newtonsoft.Pinned).IsEqualTo("true");
-
+        // Pinned packages unchanged (xunit 2.4.0 is deprecated, but pinned packages are never migrated)
         var nunit = packages.First(_ => _.Id == "NUnit");
         await Assert.That(nunit.Version).IsEqualTo("3.13.0");
         await Assert.That(nunit.Pinned).IsEqualTo("true");
 
-        // Unpinned package updated
         var xunit = packages.First(_ => _.Id == "xunit");
-        await Assert.That(xunit.Version).IsNotEqualTo("2.4.0");
-        await Assert.That(xunit.Pinned).IsNull();
+        await Assert.That(xunit.Version).IsEqualTo("2.4.0");
+        await Assert.That(xunit.Pinned).IsEqualTo("true");
+
+        // Unpinned package updated
+        var newtonsoft = packages.First(_ => _.Id == "Newtonsoft.Json");
+        await Assert.That(newtonsoft.Version).IsNotEqualTo("12.0.1");
+        await Assert.That(newtonsoft.Pinned).IsNull();
     }
 
     [Test]
