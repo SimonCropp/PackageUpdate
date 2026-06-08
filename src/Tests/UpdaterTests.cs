@@ -286,10 +286,8 @@ public class UpdaterTests
 
         var metadata = new
         {
-            result.Identity.Id,
+            result!.Identity.Id,
             Version = result.Identity.Version.ToString(),
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            HasVersion = result.Identity.Version != null,
             result.Identity.Version?.IsPrerelease
         };
 
