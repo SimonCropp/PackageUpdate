@@ -288,7 +288,7 @@ public class UpdaterTests
         {
             result!.Identity.Id,
             Version = result.Identity.Version.ToString(),
-            result.Identity.Version?.IsPrerelease
+            result.Identity.Version.IsPrerelease
         };
 
         await Verify(metadata);
