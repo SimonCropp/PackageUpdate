@@ -437,7 +437,7 @@
 
         return versions
             .Where(_ => ShouldConsiderVersion(_, currentVersion))
-            .OrderByDescending(_ => _)
+            .OrderDescending()
             .ToList();
     }
 
