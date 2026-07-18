@@ -9,6 +9,7 @@
             {
                 continue;
             }
+
             list.Add(line);
         }
 

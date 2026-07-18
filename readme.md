@@ -330,6 +330,51 @@ The next time you run the updater, it will update to the latest version.
 - Comments and formatting around pinned packages are preserved during updates
 
 
+## Version Overrides
+
+
+### Overview
+
+Under Central Package Management, a project can reference a different version than the one declared centrally in `Directory.Packages.props` by adding a [`VersionOverride`](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management#overriding-package-versions) attribute to its `PackageReference`.
+
+PackageUpdate keeps these overrides up to date, independently of the central version. Each override is updated using the same rule applied to central versions:
+
+- A stable override is only moved to a newer stable version.
+- A pre-release override also considers pre-release versions.
+
+
+### Example
+
+A common use case is keeping the packable projects on the **stable** version of a dependency, while a test project tracks its **pre-release**.
+
+`Directory.Packages.props` stays on the stable:
+
+```xml
+<PackageVersion Include="Verify.XunitV3" Version="31.25.0" />
+```
+
+`Tests/Tests.csproj` tracks the pre-release:
+
+```xml
+<PackageReference Include="Verify.XunitV3" VersionOverride="32.0.0-beta.1" />
+```
+
+When a newer pre-release is published, only the override in the test project is advanced; the central stable entry is left untouched.
+
+Overrides that point at a stable version work the same way, and are moved to newer stable versions:
+
+```xml
+<PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
+```
+
+
+### Behavior
+
+- `VersionOverride` entries are updated in all `*.csproj` files under each solution directory.
+- A `VersionOverride` is only skipped when the `PackageReference` itself has `Pinned="true"`. Pinning the central `PackageVersion` does not pin the override, so the deployed projects can stay fixed while a test project keeps floating.
+- The `--package` filter also applies to override updates.
+
+
 ## Automatic Package Migration
 
 
