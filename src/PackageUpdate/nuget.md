@@ -34,6 +34,7 @@ If no directory is passed the current directory will be used.
 
  * Updates all packages across all solutions in a directory
  * Respects `Pinned="true"` attribute to skip specific packages
+ * Updates `VersionOverride` entries in projects independently of the central version
  * Automatically migrates deprecated packages to recommended alternatives
  * Preserves file formatting (newlines, indentation)
  * Queries all configured NuGet sources

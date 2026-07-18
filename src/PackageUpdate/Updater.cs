@@ -110,6 +110,20 @@
             Log.Information("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
         }
 
+        await SaveXml(directoryPackagesPropsPath, xml, newLine, hasTrailingNewline);
+
+        // Update PackageReference entries in csproj files for migrated packages
+        if (migrations.Count > 0)
+        {
+            await UpdateCsprojFiles(directory, migrations);
+        }
+
+        // Update VersionOverride entries in csproj files (e.g. test projects tracking a pre-release)
+        await UpdateVersionOverrides(directory, packageName, sources, cache);
+    }
+
+    static async Task SaveXml(string path, XDocument xml, string newLine, bool hasTrailingNewline)
+    {
         var xmlSettings = new XmlWriterSettings
         {
             OmitXmlDeclaration = true,
@@ -120,7 +134,7 @@
             Async = true
         };
 
-        await using (var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings))
+        await using (var writer = XmlWriter.Create(path, xmlSettings))
         {
             await xml.SaveAsync(writer, Cancel.None);
         }
@@ -128,13 +142,7 @@
         // Match the original trailing newline convention
         if (hasTrailingNewline)
         {
-            await File.AppendAllTextAsync(directoryPackagesPropsPath, newLine);
-        }
-
-        // Update PackageReference entries in csproj files for migrated packages
-        if (migrations.Count > 0)
-        {
-            await UpdateCsprojFiles(directory, migrations);
+            await File.AppendAllTextAsync(path, newLine);
         }
     }
 
@@ -362,25 +370,84 @@
 
             if (updated)
             {
-                var xmlSettings = new XmlWriterSettings
-                {
-                    OmitXmlDeclaration = true,
-                    Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                    Indent = true,
-                    IndentChars = "  ",
-                    NewLineChars = newLine,
-                    Async = true
-                };
+                await SaveXml(csprojPath, csprojXml, newLine, hasTrailingNewline);
+            }
+        }
+    }
 
-                await using (var writer = XmlWriter.Create(csprojPath, xmlSettings))
+    static async Task UpdateVersionOverrides(
+        string directory,
+        string? packageName,
+        List<PackageSource> sources,
+        SourceCacheContext cache)
+    {
+        foreach (var csprojPath in EnumerateCsprojFiles(directory))
+        {
+            var (newLine, hasTrailingNewline) = DetectNewLineInfo(csprojPath);
+            var csprojXml = XDocument.Load(csprojPath);
+
+            var overrides = csprojXml.Descendants("PackageReference")
+                .Select(element => new
                 {
-                    await csprojXml.SaveAsync(writer, Cancel.None);
+                    Element = element,
+                    Package = element.Attribute("Include")?.Value,
+                    CurrentOverride = element.Attribute("VersionOverride")?.Value,
+                    Pinned = element.Attribute("Pinned")?.Value == "true"
+                })
+                .Where(_ => _.Package != null &&
+                            _.CurrentOverride != null &&
+                            !_.Pinned)
+                .ToList();
+
+            var updated = false;
+
+            foreach (var packageOverride in overrides)
+            {
+                // Filter to specific package if requested
+                if (!string.IsNullOrEmpty(packageName) &&
+                    !string.Equals(packageOverride.Package, packageName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
                 }
 
-                if (hasTrailingNewline)
+                if (!NuGetVersion.TryParse(packageOverride.CurrentOverride, out var currentVersion))
                 {
-                    await File.AppendAllTextAsync(csprojPath, newLine);
+                    continue;
                 }
+
+                // An override follows the same rule as a central version: a stable override only moves
+                // to a newer stable, a pre-release override also considers pre-releases
+                var latestMetadata = await GetLatestVersion(
+                    packageOverride.Package!,
+                    currentVersion,
+                    sources,
+                    cache);
+
+                if (latestMetadata == null)
+                {
+                    continue;
+                }
+
+                var latestVersion = latestMetadata.Identity.Version;
+
+                if (latestVersion <= currentVersion)
+                {
+                    continue;
+                }
+
+                packageOverride.Element.SetAttributeValue("VersionOverride", latestVersion.ToString());
+                updated = true;
+                Log.Information(
+                    "Updated {Package} VersionOverride: {NuGetVersion} -> {LatestVersion} in {File}",
+                    packageOverride.Package,
+                    currentVersion,
+                    latestVersion,
+                    Path.GetFileName(csprojPath));
+            }
+
+            if (updated)
+            {
+                await SaveXml(csprojPath, csprojXml, newLine, hasTrailingNewline);
             }
         }
     }
