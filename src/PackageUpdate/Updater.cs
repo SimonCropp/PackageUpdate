@@ -2,6 +2,7 @@
 {
     static ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> metadataCache = new(PackageCacheKeyComparer.Instance);
     static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestVersionCache = new(PackageCacheKeyComparer.Instance);
+    static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestPrereleaseVersionCache = new(PackageCacheKeyComparer.Instance);
 
     public static async Task Update(
         SourceCacheContext cache,
@@ -110,6 +111,20 @@
             Log.Information("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
         }
 
+        await SaveXml(directoryPackagesPropsPath, xml, newLine, hasTrailingNewline);
+
+        // Update PackageReference entries in csproj files for migrated packages
+        if (migrations.Count > 0)
+        {
+            await UpdateCsprojFiles(directory, migrations);
+        }
+
+        // Update VersionOverride entries in csproj files (e.g. test projects tracking a pre-release)
+        await UpdateVersionOverrides(directory, packageName, sources, cache);
+    }
+
+    static async Task SaveXml(string path, XDocument xml, string newLine, bool hasTrailingNewline)
+    {
         var xmlSettings = new XmlWriterSettings
         {
             OmitXmlDeclaration = true,
@@ -120,7 +135,7 @@
             Async = true
         };
 
-        await using (var writer = XmlWriter.Create(directoryPackagesPropsPath, xmlSettings))
+        await using (var writer = XmlWriter.Create(path, xmlSettings))
         {
             await xml.SaveAsync(writer, Cancel.None);
         }
@@ -128,13 +143,7 @@
         // Match the original trailing newline convention
         if (hasTrailingNewline)
         {
-            await File.AppendAllTextAsync(directoryPackagesPropsPath, newLine);
-        }
-
-        // Update PackageReference entries in csproj files for migrated packages
-        if (migrations.Count > 0)
-        {
-            await UpdateCsprojFiles(directory, migrations);
+            await File.AppendAllTextAsync(path, newLine);
         }
     }
 
@@ -180,10 +189,12 @@
         string package,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
-        SourceCacheContext cache)
+        SourceCacheContext cache,
+        bool includePrerelease = false)
     {
+        var versionCache = includePrerelease ? latestPrereleaseVersionCache : latestVersionCache;
         var key = (package, currentVersion);
-        if (latestVersionCache.TryGetValue(key, out var cached))
+        if (versionCache.TryGetValue(key, out var cached))
         {
             return cached;
         }
@@ -194,7 +205,7 @@
         {
             var (repository, metadataResource) = await RepositoryReader.Read(source);
 
-            var condidates = await GetCondidates(package, currentVersion, cache, repository);
+            var condidates = await GetCondidates(package, currentVersion, cache, repository, includePrerelease);
 
             foreach (var candidate in condidates)
             {
@@ -221,7 +232,7 @@
             }
         }
 
-        latestVersionCache[key] = latestMetadata;
+        versionCache[key] = latestMetadata;
         return latestMetadata;
     }
 
@@ -362,25 +373,86 @@
 
             if (updated)
             {
-                var xmlSettings = new XmlWriterSettings
-                {
-                    OmitXmlDeclaration = true,
-                    Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                    Indent = true,
-                    IndentChars = "  ",
-                    NewLineChars = newLine,
-                    Async = true
-                };
+                await SaveXml(csprojPath, csprojXml, newLine, hasTrailingNewline);
+            }
+        }
+    }
 
-                await using (var writer = XmlWriter.Create(csprojPath, xmlSettings))
+    static async Task UpdateVersionOverrides(
+        string directory,
+        string? packageName,
+        List<PackageSource> sources,
+        SourceCacheContext cache)
+    {
+        foreach (var csprojPath in EnumerateCsprojFiles(directory))
+        {
+            var (newLine, hasTrailingNewline) = DetectNewLineInfo(csprojPath);
+            var csprojXml = XDocument.Load(csprojPath);
+
+            var overrides = csprojXml.Descendants("PackageReference")
+                .Select(element => new
                 {
-                    await csprojXml.SaveAsync(writer, Cancel.None);
+                    Element = element,
+                    Package = element.Attribute("Include")?.Value,
+                    CurrentOverride = element.Attribute("VersionOverride")?.Value,
+                    Pinned = element.Attribute("Pinned")?.Value == "true"
+                })
+                .Where(_ => _.Package != null &&
+                            _.CurrentOverride != null &&
+                            !_.Pinned)
+                .ToList();
+
+            var updated = false;
+
+            foreach (var packageOverride in overrides)
+            {
+                // Filter to specific package if requested
+                if (!string.IsNullOrEmpty(packageName) &&
+                    !string.Equals(packageOverride.Package, packageName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
                 }
 
-                if (hasTrailingNewline)
+                if (!NuGetVersion.TryParse(packageOverride.CurrentOverride, out var currentVersion))
                 {
-                    await File.AppendAllTextAsync(csprojPath, newLine);
+                    continue;
                 }
+
+                // A VersionOverride is typically used to track a pre-release (e.g. a test project),
+                // so always consider pre-release versions regardless of the current value. This keeps
+                // the override on the latest build and avoids getting stuck once it graduates to a stable.
+                var latestMetadata = await GetLatestVersion(
+                    packageOverride.Package!,
+                    currentVersion,
+                    sources,
+                    cache,
+                    includePrerelease: true);
+
+                if (latestMetadata == null)
+                {
+                    continue;
+                }
+
+                var latestVersion = latestMetadata.Identity.Version;
+
+                if (latestVersion <= currentVersion)
+                {
+                    continue;
+                }
+
+                packageOverride.Element.SetAttributeValue("VersionOverride", latestVersion.ToString());
+                updated = true;
+                Log.Information(
+                    "Updated {Package} VersionOverride: {NuGetVersion} -> {LatestVersion} in {File}",
+                    packageOverride.Package,
+                    currentVersion,
+                    latestVersion,
+                    Path.GetFileName(csprojPath));
+            }
+
+            if (updated)
+            {
+                await SaveXml(csprojPath, csprojXml, newLine, hasTrailingNewline);
             }
         }
     }
@@ -424,7 +496,7 @@
         }
     }
 
-    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
+    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository, bool includePrerelease)
     {
         // Use FindPackageByIdResource to efficiently get version list
         var findResource = await repository.GetResourceAsync<FindPackageByIdResource>();
@@ -436,16 +508,16 @@
             Cancel.None);
 
         return versions
-            .Where(_ => ShouldConsiderVersion(_, currentVersion))
+            .Where(_ => ShouldConsiderVersion(_, currentVersion, includePrerelease))
             .OrderDescending()
             .ToList();
     }
 
-    static bool ShouldConsiderVersion(NuGetVersion candidate, NuGetVersion current)
+    static bool ShouldConsiderVersion(NuGetVersion candidate, NuGetVersion current, bool includePrerelease)
     {
-        // If current is stable, only consider stable or newer versions
+        // If current is stable, only consider stable or newer versions, unless pre-releases are explicitly allowed
         // If current is pre-release, consider any newer version
-        if (!current.IsPrerelease && candidate.IsPrerelease)
+        if (!includePrerelease && !current.IsPrerelease && candidate.IsPrerelease)
         {
             return false;
         }

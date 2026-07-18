@@ -1434,4 +1434,265 @@ public class UpdaterTests
             await Assert.That(metadataResource).IsNotNull();
         }
     }
+
+    static string nugetConfigOnlyOrg =
+        """
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+          </packageSources>
+        </configuration>
+        """;
+
+    static async Task<(string props, string csproj)> RunOverrideScenario(
+        string directoryPackages,
+        string csproj,
+        string? package = null)
+    {
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
+
+        using var directory = new TempDirectory();
+        var nugetConfigPath = Path.Combine(directory, "nuget.config");
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+        var csprojPath = Path.Combine(directory, "Tests.csproj");
+
+        await File.WriteAllTextAsync(nugetConfigPath, nugetConfigOnlyOrg);
+        await File.WriteAllTextAsync(packagesPath, directoryPackages);
+        await File.WriteAllTextAsync(csprojPath, csproj);
+
+        await Updater.Update(cache, packagesPath, package);
+
+        return (
+            await File.ReadAllTextAsync(packagesPath),
+            await File.ReadAllTextAsync(csprojPath));
+    }
+
+    static string? OverrideOf(string csproj, string package) =>
+        XDocument.Parse(csproj)
+            .Descendants("PackageReference")
+            .FirstOrDefault(_ => string.Equals(_.Attribute("Include")?.Value, package, StringComparison.OrdinalIgnoreCase))
+            ?.Attribute("VersionOverride")?.Value;
+
+    [Test]
+    public async Task UpdatesVersionOverrideInCsproj()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" VersionOverride="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (props, csprojResult) = await RunOverrideScenario(directoryPackages, csproj);
+
+        // The VersionOverride in the csproj should have moved forward
+        var updatedOverride = OverrideOf(csprojResult, "Newtonsoft.Json");
+        await Assert.That(updatedOverride).IsNotEqualTo("12.0.1");
+        await Assert.That(NuGetVersion.TryParse(updatedOverride, out var overrideVersion)).IsTrue();
+        await Assert.That(overrideVersion! > NuGetVersion.Parse("12.0.1")).IsTrue();
+
+        // The central stable version must stay stable
+        var centralVersion = XDocument.Parse(props)
+            .Descendants("PackageVersion")
+            .Single(_ => _.Attribute("Include")?.Value == "Newtonsoft.Json")
+            .Attribute("Version")!.Value;
+        await Assert.That(NuGetVersion.Parse(centralVersion).IsPrerelease).IsFalse();
+    }
+
+    [Test]
+    public async Task VersionOverridePreReleaseMovesForward()
+    {
+        // Central stays on a stable, the test csproj tracks the pre-release via VersionOverride
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Verify" VersionOverride="1.0.0-beta.1" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (_, csprojResult) = await RunOverrideScenario(directoryPackages, csproj);
+
+        var updatedOverride = OverrideOf(csprojResult, "Verify");
+        await Assert.That(updatedOverride).IsNotEqualTo("1.0.0-beta.1");
+        await Assert.That(NuGetVersion.TryParse(updatedOverride, out var overrideVersion)).IsTrue();
+        await Assert.That(overrideVersion! > NuGetVersion.Parse("1.0.0-beta.1")).IsTrue();
+    }
+
+    [Test]
+    public async Task VersionOverrideRespectsPackageFilter()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" VersionOverride="12.0.1" />
+                <PackageReference Include="Serilog" VersionOverride="2.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (_, csprojResult) = await RunOverrideScenario(directoryPackages, csproj, "Newtonsoft.Json");
+
+        // Targeted package override moves
+        await Assert.That(OverrideOf(csprojResult, "Newtonsoft.Json")).IsNotEqualTo("12.0.1");
+
+        // Non-targeted package override is left untouched
+        await Assert.That(OverrideOf(csprojResult, "Serilog")).IsEqualTo("2.0.0");
+    }
+
+    [Test]
+    public async Task PackageReferenceWithoutVersionOverrideUnchanged()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (_, csprojResult) = await RunOverrideScenario(directoryPackages, csproj);
+
+        // A plain PackageReference must never gain a VersionOverride or Version attribute
+        await Assert.That(csprojResult).DoesNotContain("VersionOverride");
+        await Assert.That(csprojResult).DoesNotContain("Version=");
+    }
+
+    [Test]
+    public async Task VersionOverridePreservesCsprojFormatting()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <!-- Test project comment -->
+              <ItemGroup>
+                <!-- Track the pre-release here -->
+                <PackageReference Include="Newtonsoft.Json" VersionOverride="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (_, csprojResult) = await RunOverrideScenario(directoryPackages, csproj);
+
+        await Assert.That(csprojResult).Contains("<!-- Test project comment -->");
+        await Assert.That(csprojResult).Contains("<!-- Track the pre-release here -->");
+        await Assert.That(OverrideOf(csprojResult, "Newtonsoft.Json")).IsNotEqualTo("12.0.1");
+    }
+
+    [Test]
+    public async Task PinnedVersionOverrideNotUpdated()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" VersionOverride="12.0.1" Pinned="true" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (_, csprojResult) = await RunOverrideScenario(directoryPackages, csproj);
+
+        // The override itself is pinned, so it must not move
+        await Assert.That(OverrideOf(csprojResult, "Newtonsoft.Json")).IsEqualTo("12.0.1");
+        await Assert.That(csprojResult).Contains("Pinned=\"true\"");
+    }
+
+    [Test]
+    public async Task CentralPinDoesNotPinVersionOverride()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="true" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var csproj =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" VersionOverride="12.0.1" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var (props, csprojResult) = await RunOverrideScenario(directoryPackages, csproj);
+
+        // The central pin keeps the central version fixed
+        var centralVersion = XDocument.Parse(props)
+            .Descendants("PackageVersion")
+            .Single(_ => _.Attribute("Include")?.Value == "Newtonsoft.Json")
+            .Attribute("Version")!.Value;
+        await Assert.That(centralVersion).IsEqualTo("12.0.1");
+
+        // But the override is only pinned by its own Pinned attribute, so it still advances
+        await Assert.That(OverrideOf(csprojResult, "Newtonsoft.Json")).IsNotEqualTo("12.0.1");
+    }
 }
