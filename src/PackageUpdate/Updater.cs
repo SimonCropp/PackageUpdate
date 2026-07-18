@@ -2,7 +2,6 @@
 {
     static ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> metadataCache = new(PackageCacheKeyComparer.Instance);
     static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestVersionCache = new(PackageCacheKeyComparer.Instance);
-    static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestPrereleaseVersionCache = new(PackageCacheKeyComparer.Instance);
 
     public static async Task Update(
         SourceCacheContext cache,
@@ -189,12 +188,10 @@
         string package,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
-        SourceCacheContext cache,
-        bool includePrerelease = false)
+        SourceCacheContext cache)
     {
-        var versionCache = includePrerelease ? latestPrereleaseVersionCache : latestVersionCache;
         var key = (package, currentVersion);
-        if (versionCache.TryGetValue(key, out var cached))
+        if (latestVersionCache.TryGetValue(key, out var cached))
         {
             return cached;
         }
@@ -205,7 +202,7 @@
         {
             var (repository, metadataResource) = await RepositoryReader.Read(source);
 
-            var condidates = await GetCondidates(package, currentVersion, cache, repository, includePrerelease);
+            var condidates = await GetCondidates(package, currentVersion, cache, repository);
 
             foreach (var candidate in condidates)
             {
@@ -232,7 +229,7 @@
             }
         }
 
-        versionCache[key] = latestMetadata;
+        latestVersionCache[key] = latestMetadata;
         return latestMetadata;
     }
 
@@ -418,15 +415,13 @@
                     continue;
                 }
 
-                // A VersionOverride is typically used to track a pre-release (e.g. a test project),
-                // so always consider pre-release versions regardless of the current value. This keeps
-                // the override on the latest build and avoids getting stuck once it graduates to a stable.
+                // An override follows the same rule as a central version: a stable override only moves
+                // to a newer stable, a pre-release override also considers pre-releases
                 var latestMetadata = await GetLatestVersion(
                     packageOverride.Package!,
                     currentVersion,
                     sources,
-                    cache,
-                    includePrerelease: true);
+                    cache);
 
                 if (latestMetadata == null)
                 {
@@ -496,7 +491,7 @@
         }
     }
 
-    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository, bool includePrerelease)
+    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
     {
         // Use FindPackageByIdResource to efficiently get version list
         var findResource = await repository.GetResourceAsync<FindPackageByIdResource>();
@@ -508,16 +503,16 @@
             Cancel.None);
 
         return versions
-            .Where(_ => ShouldConsiderVersion(_, currentVersion, includePrerelease))
+            .Where(_ => ShouldConsiderVersion(_, currentVersion))
             .OrderDescending()
             .ToList();
     }
 
-    static bool ShouldConsiderVersion(NuGetVersion candidate, NuGetVersion current, bool includePrerelease)
+    static bool ShouldConsiderVersion(NuGetVersion candidate, NuGetVersion current)
     {
-        // If current is stable, only consider stable or newer versions, unless pre-releases are explicitly allowed
+        // If current is stable, only consider stable or newer versions
         // If current is pre-release, consider any newer version
-        if (!includePrerelease && !current.IsPrerelease && candidate.IsPrerelease)
+        if (!current.IsPrerelease && candidate.IsPrerelease)
         {
             return false;
         }

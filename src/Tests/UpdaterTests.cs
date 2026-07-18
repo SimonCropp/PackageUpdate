@@ -1507,6 +1507,9 @@ public class UpdaterTests
         await Assert.That(NuGetVersion.TryParse(updatedOverride, out var overrideVersion)).IsTrue();
         await Assert.That(overrideVersion! > NuGetVersion.Parse("12.0.1")).IsTrue();
 
+        // A stable override must stay stable, never jumping to a pre-release
+        await Assert.That(overrideVersion!.IsPrerelease).IsFalse();
+
         // The central stable version must stay stable
         var centralVersion = XDocument.Parse(props)
             .Descendants("PackageVersion")
