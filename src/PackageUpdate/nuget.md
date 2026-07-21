@@ -35,6 +35,7 @@ If no directory is passed the current directory will be used.
  * Updates all packages across all solutions in a directory
  * Respects `Pinned="true"` attribute to skip specific packages
  * Updates `VersionOverride` entries in projects independently of the central version
+ * Updates local dotnet tools in `dotnet-tools.json` manifests
  * Automatically migrates deprecated packages to recommended alternatives
  * Preserves file formatting (newlines, indentation)
  * Queries all configured NuGet sources
@@ -47,6 +48,18 @@ Add `Pinned="true"` to prevent a package from being updated:
 
 ```xml
 <PackageVersion Include="System.ValueTuple" Version="4.5.0" Pinned="true" />
+```
+
+Add `"pinned": true` to prevent a dotnet tool from being updated:
+
+```json
+"dotnet-ef": {
+  "version": "8.0.0",
+  "commands": [
+    "dotnet-ef"
+  ],
+  "pinned": true
+}
 ```
 
 
