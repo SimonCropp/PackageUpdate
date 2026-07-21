@@ -13,6 +13,10 @@
         }
     }
 
+    // Covers both `.config/dotnet-tools.json` and the legacy `dotnet-tools.json` beside a solution
+    public static IEnumerable<string> FindToolManifests(string directory) =>
+        EnumerateFiles(directory, "dotnet-tools.json");
+
     static List<string> EnumerateFiles(string directory, string pattern)
     {
         var allFiles = new List<string>();

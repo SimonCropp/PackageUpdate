@@ -97,6 +97,7 @@ packageupdate --build
 3. **Solution Validation**: Checks for `Directory.Packages.props` (CPM requirement) and applies exclusion rules
 4. **Package Update** (`Updater.Update`): Updates package versions in `Directory.Packages.props`
 5. **Optional Build** (`DotnetStarter.Build`): Builds solution after update if `--build` flag is provided
+6. **Tool Manifest Update** (`ToolUpdater.Update`): Scans the target directory for `dotnet-tools.json` manifests and updates tool versions. This scan is independent of the solution scan, since `.config/dotnet-tools.json` usually sits at the repo root while the solution sits in a sub directory
 
 ### Key Components
 
@@ -108,6 +109,13 @@ packageupdate --build
   - Preserves file formatting (newlines, indentation, trailing newlines)
   - Only considers stable versions when current version is stable
   - Only considers pre-release versions when current version is pre-release
+
+- **ToolUpdater.cs**: Updates tool versions in a `dotnet-tools.json` manifest
+  - Reuses `Updater.GetLatestVersion`, so tools follow the same stable/pre-release rules as packages
+  - Respects `"pinned": true` on a tool entry, and the `--package` filter
+  - Malformed manifests are logged as a warning, not thrown
+
+- **ToolManifest.cs**: Parses a `dotnet-tools.json` manifest with `Utf8JsonReader`, capturing the byte range of each version value. Updates are spliced into the original bytes from the end of the file, so formatting is preserved exactly rather than being re-serialized
 
 - **PackageSourceReader.cs**: Reads NuGet sources from NuGet.config hierarchy using NuGet settings infrastructure
 
@@ -149,6 +157,34 @@ The tool only works with CPM. Each solution must have a `Directory.Packages.prop
 ### Package Pinning
 
 Packages with `Pinned="true"` attribute are never updated, even when explicitly targeted via `--package` flag.
+
+### Dotnet Tools
+
+Local dotnet tools are updated in every `dotnet-tools.json` manifest found under the target directory:
+
+```json
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-ef": {
+      "version": "8.0.0",
+      "commands": [
+        "dotnet-ef"
+      ]
+    },
+    "packageupdate": {
+      "version": "4.0.0",
+      "commands": [
+        "packageupdate"
+      ],
+      "pinned": true
+    }
+  }
+}
+```
+
+Tools with `"pinned": true` are never updated. The dotnet CLI ignores the extra property, so `dotnet tool restore` and `dotnet tool list` continue to work.
 
 ### Package Migration
 
@@ -216,8 +252,10 @@ src/
 ├── PackageUpdate/          # Main tool project (dotnet global tool)
 │   ├── Program.cs          # Entry point and orchestration
 │   ├── Updater.cs          # Core update logic
+│   ├── ToolUpdater.cs      # dotnet-tools.json update logic
+│   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
 │   ├── CommandRunner.cs    # CLI parsing
-│   ├── FileSystem.cs       # Solution discovery
+│   ├── FileSystem.cs       # Solution and tool manifest discovery
 │   ├── PackageSourceReader.cs  # NuGet source config
 │   └── ...
 ├── Tests/                  # Unit tests

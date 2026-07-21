@@ -95,11 +95,15 @@ packageupdate --build
 
 ### Behavior
 
- * Recursively scan the target directory for all directories containing a `.sln` file.
- * Perform a [dotnet restore](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-restore) on the directory.
- * Recursively scan the directory for `*.csproj` files.
- * Call [dotnet list package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-list-package) to get the list of pending packages.
- * Call [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) with the package and version.
+ * Recursively scan the target directory for `*.sln` and `*.slnx` files.
+ * Skip forked repositories, and any solution excluded via `PackageUpdateIgnores`.
+ * For each remaining solution, parse the `Directory.Packages.props` beside it. Solutions without one are skipped.
+ * Read the NuGet sources from the [nuget.config hierarchy](https://learn.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior#how-settings-are-applied).
+ * For every `PackageVersion` that is not pinned, query those sources using the [NuGet client SDK](https://learn.microsoft.com/en-us/nuget/reference/nuget-client-sdk). A package whose current version is deprecated is migrated to its alternative. Every other package is moved to the highest listed version, where a stable version never moves to a pre-release.
+ * Write `Directory.Packages.props` back, preserving the original newlines, indentation and comments.
+ * In the `*.csproj` files under the solution, rename the `PackageReference` of any migrated package, and move every `VersionOverride` forward.
+ * Recursively scan the target directory for `dotnet-tools.json` manifests, and move every tool that is not pinned forward.
+ * Optionally build each solution after it has been updated.
 
 
 ## PackageUpdateIgnores
@@ -348,6 +352,84 @@ Overrides that point at a stable version work the same way, and are moved to new
 - `VersionOverride` entries are updated in all `*.csproj` files under each solution directory.
 - A `VersionOverride` is only skipped when the `PackageReference` itself has `Pinned="true"`. Pinning the central `PackageVersion` does not pin the override, so the deployed projects can stay fixed while a test project keeps floating.
 - The `--package` filter also applies to override updates.
+
+
+## Dotnet Tools
+
+
+### Overview
+
+[Local dotnet tools](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools#install-a-local-tool) are declared in a `dotnet-tools.json` manifest. PackageUpdate updates the version of every tool in every manifest found under the target directory.
+
+Manifests are discovered independently of solutions, since `.config/dotnet-tools.json` usually sits at the root of a repository while the solution sits in a sub directory. Both `.config/dotnet-tools.json` and a `dotnet-tools.json` beside the solution are supported.
+
+
+### Example
+
+**Before:**
+
+```json
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-ef": {
+      "version": "8.0.0",
+      "commands": [
+        "dotnet-ef"
+      ]
+    }
+  }
+}
+```
+
+**After running `packageupdate`:**
+
+```json
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-ef": {
+      "version": "10.0.10",
+      "commands": [
+        "dotnet-ef"
+      ]
+    }
+  }
+}
+```
+
+Console output:
+
+```
+Updated tool dotnet-ef: 8.0.0 -> 10.0.10
+```
+
+
+### Pinning a Tool
+
+Add `"pinned": true` to prevent a tool from being updated:
+
+```json
+"dotnet-ef": {
+  "version": "8.0.0",
+  "commands": [
+    "dotnet-ef"
+  ],
+  "pinned": true
+}
+```
+
+The dotnet CLI ignores the extra property, so `dotnet tool restore` and `dotnet tool list` continue to work.
+
+
+### Behavior
+
+ * Version selection follows the same rule as central package versions: a stable version only moves to a newer stable, a pre-release also considers pre-releases.
+ * The `--package` filter also applies to tools, matched against the tool package id.
+ * Only the version value is rewritten. The rest of the manifest, including indentation, property order and trailing newline, is left byte for byte identical.
+ * A manifest that cannot be parsed is logged as a warning and left unchanged.
 
 
 ## Automatic Package Migration

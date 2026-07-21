@@ -31,6 +31,19 @@ static async Task Inner(string directory, string? package, bool build)
         await TryProcessSolution(cache, solution, package, build);
     }
 
+    // Tool manifests are scanned independently of solutions, since `.config/dotnet-tools.json`
+    // usually sits at the repository root while the solution sits in a sub directory
+    foreach (var manifest in FileSystem.FindToolManifests(directory))
+    {
+        if (ForkDetector.ShouldSkip(directory, manifest))
+        {
+            Log.Information("  Skipping fork: {Manifest}", manifest);
+            continue;
+        }
+
+        await TryProcessToolManifest(cache, manifest, package);
+    }
+
     if (build)
     {
         await DotnetStarter.Shutdown();
@@ -55,6 +68,39 @@ static async Task TryProcessSolution(SourceCacheContext cache, string solution, 
             solution,
             e.Message);
     }
+}
+
+static async Task TryProcessToolManifest(SourceCacheContext cache, string manifest, string? package)
+{
+    try
+    {
+        await ProcessToolManifest(cache, manifest, package);
+    }
+    catch (Exception e)
+    {
+        Log.Error(
+            """
+            Failed to process tool manifest: {Manifest}.
+            Error: {Message}
+            """,
+            manifest,
+            e.Message);
+    }
+}
+
+static async Task ProcessToolManifest(SourceCacheContext cache, string manifest, string? package)
+{
+    if (Excluder.ShouldExclude(manifest))
+    {
+        Log.Information("  Exclude: {Manifest}", manifest);
+        return;
+    }
+
+    Log.Information("  {Manifest}", manifest);
+
+    var stopwatch = Stopwatch.StartNew();
+    await ToolUpdater.Update(cache, manifest, package);
+    Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
 }
 
 static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
