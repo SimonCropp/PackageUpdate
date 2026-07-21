@@ -1408,7 +1408,7 @@ public class UpdaterTests
 
         var latestMetadata = await Updater.GetLatestVersion(
             id!,
-            new NuGetVersion(0, 0, 0),
+            new(0, 0, 0),
             sources,
             cache);
 
