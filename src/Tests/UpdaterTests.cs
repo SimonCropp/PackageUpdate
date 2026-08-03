@@ -29,6 +29,32 @@ public class UpdaterTests
     }
 
     [Test]
+    public async Task PreservesMultiLineAttributes()
+    {
+        var content =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json"
+                                Version="12.0.1"
+                                PrivateAssets="all" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
+
+        using var tempFile = await TempFile.CreateText(content);
+
+        await Updater.Update(cache, tempFile.Path, null);
+
+        var result = await File.ReadAllTextAsync(tempFile.Path);
+        await Verify(result);
+    }
+
+    [Test]
     public async Task UpdateSinglePackage()
     {
         using var cache = new SourceCacheContext
@@ -167,7 +193,10 @@ public class UpdaterTests
         await Assert.That(result).Contains("not-a-version");
     }
 
-    static List<PackageSource> sources = [new("https://api.nuget.org/v3/index.json")];
+    static List<PackageSource> sources =
+    [
+        new("https://api.nuget.org/v3/index.json")
+    ];
 
     [Test]
     public async Task GetLatestVersion_StableToStable()

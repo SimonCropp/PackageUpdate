@@ -1,0 +1,7 @@
+﻿<Project>
+  <ItemGroup>
+    <PackageVersion Include="Newtonsoft.Json"
+                    Version="13.0.4"
+                    PrivateAssets="all" />
+  </ItemGroup>
+</Project>
