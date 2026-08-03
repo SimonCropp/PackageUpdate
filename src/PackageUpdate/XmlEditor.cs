@@ -24,10 +24,7 @@ class XmlEditor
     public static XmlEditor Load(string path)
     {
         var bytes = File.ReadAllBytes(path);
-        var hasBom = bytes.Length >= 3 &&
-                     bytes[0] == 0xEF &&
-                     bytes[1] == 0xBB &&
-                     bytes[2] == 0xBF;
+        var hasBom = bytes is [0xEF, 0xBB, 0xBF, ..];
         var text = new UTF8Encoding(false).GetString(hasBom ? bytes.AsSpan(3) : bytes);
         var document = XDocument.Parse(text, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
         return new(text, hasBom, document);
@@ -43,7 +40,7 @@ class XmlEditor
         var tag = FindStartTag(element);
         var match = Regex.Match(
             text[tag.Start..tag.End],
-            $$"""(?<=[\s'"/>])(?<name>{{Regex.Escape(name)}})\s*=\s*(?<quote>["'])(?<value>[^"']*)\k<quote>""");
+            $"""(?<=[\s'"/>])(?<name>{Regex.Escape(name)})\s*=\s*(?<quote>["'])(?<value>[^"']*)\k<quote>""");
 
         var encoded = Encode(value);
         if (match.Success)
@@ -66,11 +63,11 @@ class XmlEditor
         edits.Add((nameEnd, 0, $" {name}=\"{encoded}\""));
     }
 
-    public async Task Save(string path)
+    public Task Save(string path)
     {
         if (!HasEdits)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         var builder = new StringBuilder(text);
@@ -85,7 +82,7 @@ class XmlEditor
         lineStarts = BuildLineStarts(text);
 
         var encoding = new UTF8Encoding(hasBom);
-        await File.WriteAllTextAsync(path, text, encoding);
+        return File.WriteAllTextAsync(path, text, encoding);
     }
 
     (int Start, int End) FindStartTag(XElement element)

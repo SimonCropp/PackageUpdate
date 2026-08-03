@@ -193,7 +193,10 @@ public class UpdaterTests
         await Assert.That(result).Contains("not-a-version");
     }
 
-    static List<PackageSource> sources = [new("https://api.nuget.org/v3/index.json")];
+    static List<PackageSource> sources =
+    [
+        new("https://api.nuget.org/v3/index.json")
+    ];
 
     [Test]
     public async Task GetLatestVersion_StableToStable()
