@@ -10,11 +10,10 @@
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
-        // Detect the original newline style and trailing newline
-        var (newLine, hasTrailingNewline) = DetectNewLineInfo(directoryPackagesPropsPath);
-
-        // Load the XML document
-        var xml = XDocument.Load(directoryPackagesPropsPath);
+        // Load the XML document. The editor splices updates into the original text so
+        // formatting, including attributes spread over multiple lines, is preserved
+        var editor = XmlEditor.Load(directoryPackagesPropsPath);
+        var xml = editor.Document;
 
         // Read current package versions
         var packageVersions = xml.Descendants("PackageVersion")
@@ -70,6 +69,7 @@
                 if (deprecation != null)
                 {
                     var migration = await TryMigratePackage(
+                        editor,
                         package.Element,
                         package.Package!,
                         deprecation,
@@ -106,11 +106,11 @@
             }
 
             // Update the Version attribute
-            package.Element.SetAttributeValue("Version", latestVersion.ToString());
+            editor.SetAttribute(package.Element, "Version", latestVersion.ToString());
             Log.Information("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
         }
 
-        await SaveXml(directoryPackagesPropsPath, xml, newLine, hasTrailingNewline);
+        await editor.Save(directoryPackagesPropsPath);
 
         // Update PackageReference entries in csproj files for migrated packages
         if (migrations.Count > 0)
@@ -120,68 +120,6 @@
 
         // Update VersionOverride entries in csproj files (e.g. test projects tracking a pre-release)
         await UpdateVersionOverrides(directory, packageName, sources, cache);
-    }
-
-    static async Task SaveXml(string path, XDocument xml, string newLine, bool hasTrailingNewline)
-    {
-        var xmlSettings = new XmlWriterSettings
-        {
-            OmitXmlDeclaration = true,
-            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-            Indent = true,
-            IndentChars = "  ",
-            NewLineChars = newLine,
-            Async = true
-        };
-
-        await using (var writer = XmlWriter.Create(path, xmlSettings))
-        {
-            await xml.SaveAsync(writer, Cancel.None);
-        }
-
-        // Match the original trailing newline convention
-        if (hasTrailingNewline)
-        {
-            await File.AppendAllTextAsync(path, newLine);
-        }
-    }
-
-    static (string newLine, bool hasTrailingNewline) DetectNewLineInfo(string filePath)
-    {
-        var bytes = File.ReadAllBytes(filePath);
-        var newLine = Environment.NewLine;
-        var hasTrailingNewline = false;
-
-        // Detect newline style from first occurrence
-        for (var i = 0; i < bytes.Length; i++)
-        {
-            if (bytes[i] == '\r')
-            {
-                if (i + 1 < bytes.Length && bytes[i + 1] == '\n')
-                {
-                    newLine = "\r\n";
-                }
-                else
-                {
-                    newLine = "\r";
-                }
-                break;
-            }
-            if (bytes[i] == '\n')
-            {
-                newLine = "\n";
-                break;
-            }
-        }
-
-        // Detect trailing newline
-        if (bytes.Length > 0)
-        {
-            var lastByte = bytes[^1];
-            hasTrailingNewline = lastByte == '\n' || lastByte == '\r';
-        }
-
-        return (newLine, hasTrailingNewline);
     }
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
@@ -267,6 +205,7 @@
     }
 
     static async Task<(string OldPackage, string NewPackage)?> TryMigratePackage(
+        XmlEditor editor,
         XElement packageElement,
         string currentPackage,
         PackageDeprecationMetadata deprecation,
@@ -320,11 +259,11 @@
         }
 
         // Perform migration: update Include attribute and Version
-        packageElement.SetAttributeValue("Include", alternatePackage.PackageId);
+        editor.SetAttribute(packageElement, "Include", alternatePackage.PackageId);
 
         // Always use the latest version of the alternate package
         var targetVersion = alternateMetadata.Identity.Version;
-        packageElement.SetAttributeValue("Version", targetVersion.ToString());
+        editor.SetAttribute(packageElement, "Version", targetVersion.ToString());
 
         Log.Information(
             "Migrated {OldPackage} -> {NewPackage} (Version: {Version}) [Deprecated: {Reasons}]",
@@ -343,13 +282,11 @@
 
         foreach (var csprojPath in csprojFiles)
         {
-            var updated = false;
-            var (newLine, hasTrailingNewline) = DetectNewLineInfo(csprojPath);
-            var csprojXml = XDocument.Load(csprojPath);
+            var editor = XmlEditor.Load(csprojPath);
 
             foreach (var (oldPackage, newPackage) in migrations)
             {
-                var packageReferences = csprojXml.Descendants("PackageReference")
+                var packageReferences = editor.Document.Descendants("PackageReference")
                     .Where(_ => string.Equals(
                         _.Attribute("Include")?.Value,
                         oldPackage,
@@ -358,8 +295,7 @@
 
                 foreach (var packageRef in packageReferences)
                 {
-                    packageRef.SetAttributeValue("Include", newPackage);
-                    updated = true;
+                    editor.SetAttribute(packageRef, "Include", newPackage);
                     Log.Information(
                         "Updated PackageReference {OldPackage} -> {NewPackage} in {File}",
                         oldPackage,
@@ -368,10 +304,7 @@
                 }
             }
 
-            if (updated)
-            {
-                await SaveXml(csprojPath, csprojXml, newLine, hasTrailingNewline);
-            }
+            await editor.Save(csprojPath);
         }
     }
 
@@ -383,10 +316,9 @@
     {
         foreach (var csprojPath in EnumerateCsprojFiles(directory))
         {
-            var (newLine, hasTrailingNewline) = DetectNewLineInfo(csprojPath);
-            var csprojXml = XDocument.Load(csprojPath);
+            var editor = XmlEditor.Load(csprojPath);
 
-            var overrides = csprojXml.Descendants("PackageReference")
+            var overrides = editor.Document.Descendants("PackageReference")
                 .Select(element => new
                 {
                     Element = element,
@@ -398,8 +330,6 @@
                             _.CurrentOverride != null &&
                             !_.Pinned)
                 .ToList();
-
-            var updated = false;
 
             foreach (var packageOverride in overrides)
             {
@@ -435,8 +365,7 @@
                     continue;
                 }
 
-                packageOverride.Element.SetAttributeValue("VersionOverride", latestVersion.ToString());
-                updated = true;
+                editor.SetAttribute(packageOverride.Element, "VersionOverride", latestVersion.ToString());
                 Log.Information(
                     "Updated {Package} VersionOverride: {NuGetVersion} -> {LatestVersion} in {File}",
                     packageOverride.Package,
@@ -445,10 +374,7 @@
                     Path.GetFileName(csprojPath));
             }
 
-            if (updated)
-            {
-                await SaveXml(csprojPath, csprojXml, newLine, hasTrailingNewline);
-            }
+            await editor.Save(csprojPath);
         }
     }
 
