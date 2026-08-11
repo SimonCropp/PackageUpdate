@@ -6,7 +6,7 @@
   <ItemGroup>
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
     <PackageVersion Include="MarkdownSnippets.MsBuild" Version="28.4.2" />
-    <PackageVersion Include="NuGet.Protocol" Version="7.6.0" />
+    <PackageVersion Include="NuGet.Protocol" Version="7.9.0" />
     <PackageVersion Include="ProjectDefaults" Version="1.0.176" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
