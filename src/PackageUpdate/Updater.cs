@@ -214,8 +214,8 @@
         XDocument xml)
     {
         // Check if alternate package exists
-        var alternatePackage = deprecation.AlternatePackage;
-        if (alternatePackage == null)
+        var alternateId = deprecation.AlternatePackage?.PackageId;
+        if (alternateId == null)
         {
             Log.Warning(
                 "Package {Package} is deprecated but has no alternative. Reasons: {Reasons}",
@@ -229,7 +229,7 @@
             .FirstOrDefault(_ =>
                 string.Equals(
                     _.Attribute("Include")?.Value,
-                    alternatePackage.PackageId,
+                    alternateId,
                     StringComparison.OrdinalIgnoreCase));
 
         if (existingAlternate != null)
@@ -237,13 +237,13 @@
             Log.Warning(
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative already exists",
                 currentPackage,
-                alternatePackage.PackageId);
+                alternateId);
             return null;
         }
 
         // Verify alternate package exists in NuGet sources
         var alternateMetadata = await GetLatestVersion(
-            alternatePackage.PackageId,
+            alternateId,
             // Start from 0.0.0 to get any version
             new(0, 0, 0),
             sources,
@@ -254,12 +254,12 @@
             Log.Warning(
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative not found in sources",
                 currentPackage,
-                alternatePackage.PackageId);
+                alternateId);
             return null;
         }
 
         // Perform migration: update Include attribute and Version
-        editor.SetAttribute(packageElement, "Include", alternatePackage.PackageId);
+        editor.SetAttribute(packageElement, "Include", alternateId);
 
         // Always use the latest version of the alternate package
         var targetVersion = alternateMetadata.Identity.Version;
@@ -268,11 +268,11 @@
         Log.Information(
             "Migrated {OldPackage} -> {NewPackage} (Version: {Version}) [Deprecated: {Reasons}]",
             currentPackage,
-            alternatePackage.PackageId,
+            alternateId,
             targetVersion,
             string.Join(", ", deprecation.Reasons));
 
-        return (currentPackage, alternatePackage.PackageId);
+        return (currentPackage, alternateId);
     }
 
     static async Task UpdateCsprojFiles(string directory, List<(string OldPackage, string NewPackage)> migrations)
@@ -420,7 +420,8 @@
     static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
     {
         // Use FindPackageByIdResource to efficiently get version list
-        var findResource = await repository.GetResourceAsync<FindPackageByIdResource>();
+        var findResource = await repository.GetResourceAsync<FindPackageByIdResource>() ??
+                           throw new($"Could not resolve a {nameof(FindPackageByIdResource)} for source {repository.PackageSource.Source}");
 
         var versions = await findResource.GetAllVersionsAsync(
             package,
