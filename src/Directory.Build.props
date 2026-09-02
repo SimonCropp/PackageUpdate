@@ -3,12 +3,13 @@
   <PropertyGroup>
     <Version>4.5.1</Version>
     <LangVersion>preview</LangVersion>
-    <NoWarn>NU1608</NoWarn>
+    <NoWarn>NU1608;SC023</NoWarn>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <Description>Updates NuGet packages for all solutions in a directory.</Description>
     <ResolveAssemblyReferencesSilent>true</ResolveAssemblyReferencesSilent>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <Verify_SponsorshipLicenseIgnored>true</Verify_SponsorshipLicenseIgnored>
   </PropertyGroup>
 </Project>
