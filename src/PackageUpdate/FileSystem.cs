@@ -1,5 +1,25 @@
 ﻿static class FileSystem
 {
+    public static string? FindPropsFile(string startDirectory, string stopDirectory)
+    {
+        var stop = Path.TrimEndingDirectorySeparator(Path.GetFullPath(stopDirectory));
+        for (var current = new DirectoryInfo(startDirectory); current is not null; current = current.Parent)
+        {
+            var candidate = Path.Combine(current.FullName, "Directory.Packages.props");
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            if (string.Equals(current.FullName, stop, StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+        }
+
+        return null;
+    }
+
     public static IEnumerable<string> FindSolutions(string directory)
     {
         foreach (var solution in EnumerateFiles(directory, "*.sln"))

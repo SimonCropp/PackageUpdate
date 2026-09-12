@@ -28,7 +28,7 @@ static async Task Inner(string directory, string? package, bool build)
             continue;
         }
 
-        await TryProcessSolution(cache, solution, package, build);
+        await TryProcessSolution(cache, solution, package, build, directory);
     }
 
     // Tool manifests are scanned independently of solutions, since `.config/dotnet-tools.json`
@@ -52,11 +52,11 @@ static async Task Inner(string directory, string? package, bool build)
     Log.Information("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
 }
 
-static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
+static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory)
 {
     try
     {
-        await ProcessSolution(cache, solution, package, build);
+        await ProcessSolution(cache, solution, package, build, targetDirectory);
     }
     catch (Exception e)
     {
@@ -103,7 +103,7 @@ static async Task ProcessToolManifest(SourceCacheContext cache, string manifest,
     Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
 }
 
-static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build)
+static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory)
 {
     if (Excluder.ShouldExclude(solution))
     {
@@ -115,15 +115,15 @@ static async Task ProcessSolution(SourceCacheContext cache, string solution, str
 
     var solutionDirectory = Directory.GetParent(solution)!.FullName;
 
-    var props = Path.Combine(solutionDirectory, "Directory.Packages.props");
-    if (!File.Exists(props))
+    var propsLocation = FileSystem.FindPropsFile(solutionDirectory, targetDirectory);
+    if (propsLocation is null)
     {
         Log.Error("    Only central packages supported. Skipping: {Solution}", solution);
         return;
     }
 
     var stopwatch = Stopwatch.StartNew();
-    await Updater.Update(cache, props, package);
+    await Updater.Update(cache, propsLocation, package);
     Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
 
     if (build)
@@ -131,4 +131,3 @@ static async Task ProcessSolution(SourceCacheContext cache, string solution, str
         await DotnetStarter.Build(solution);
     }
 }
-
