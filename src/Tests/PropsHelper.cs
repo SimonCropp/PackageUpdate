@@ -1,4 +1,4 @@
-internal static class PropsHelper
+static class PropsHelper
 {
     internal static string CreateSolutionDir(string root, string relativePath)
     {

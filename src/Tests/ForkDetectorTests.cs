@@ -3,17 +3,17 @@ public class ForkDetectorTests
     [Test]
     public async Task NoGitRepo_ShouldNotSkip()
     {
-        using var temp = new TempDir();
-        var solutionPath = Path.Combine(temp.Path, "test.sln");
+        using var temp = new TempDirectory();
+        var solutionPath = Path.Combine(temp, "test.sln");
 
-        await Assert.That(ForkDetector.ShouldSkip(temp.Path, solutionPath)).IsFalse();
+        await Assert.That(ForkDetector.ShouldSkip(temp, solutionPath)).IsFalse();
     }
 
     [Test]
     public async Task NotAFork_ShouldNotSkip()
     {
-        using var temp = new TempDir();
-        var repoDir = Path.Combine(temp.Path, "repo");
+        using var temp = new TempDirectory();
+        var repoDir = Path.Combine(temp, "repo");
         CreateGitConfig(
             repoDir,
             """
@@ -26,14 +26,14 @@ public class ForkDetectorTests
 
         var solutionPath = Path.Combine(repoDir, "test.sln");
 
-        await Assert.That(ForkDetector.ShouldSkip(temp.Path, solutionPath)).IsFalse();
+        await Assert.That(ForkDetector.ShouldSkip(temp, solutionPath)).IsFalse();
     }
 
     [Test]
     public async Task Fork_DiscoveredViaScanning_ShouldSkip()
     {
-        using var temp = new TempDir();
-        var repoDir = Path.Combine(temp.Path, "forked-repo");
+        using var temp = new TempDirectory();
+        var repoDir = Path.Combine(temp, "forked-repo");
         CreateGitConfig(
             repoDir,
             """
@@ -50,14 +50,14 @@ public class ForkDetectorTests
         var solutionPath = Path.Combine(repoDir, "test.sln");
 
         // Target is the parent directory, fork was discovered via scanning
-        await Assert.That(ForkDetector.ShouldSkip(temp.Path, solutionPath)).IsTrue();
+        await Assert.That(ForkDetector.ShouldSkip(temp, solutionPath)).IsTrue();
     }
 
     [Test]
     public async Task Fork_ExplicitlyTargeted_ShouldNotSkip()
     {
-        using var temp = new TempDir();
-        var repoDir = Path.Combine(temp.Path, "forked-repo");
+        using var temp = new TempDirectory();
+        var repoDir = Path.Combine(temp, "forked-repo");
         CreateGitConfig(
             repoDir,
             """
@@ -80,8 +80,8 @@ public class ForkDetectorTests
     [Test]
     public async Task Fork_TargetInsideRepo_ShouldNotSkip()
     {
-        using var temp = new TempDir();
-        var repoDir = Path.Combine(temp.Path, "forked-repo");
+        using var temp = new TempDirectory();
+        var repoDir = Path.Combine(temp, "forked-repo");
         var srcDir = Path.Combine(repoDir, "src");
         Directory.CreateDirectory(srcDir);
         CreateGitConfig(
@@ -106,22 +106,22 @@ public class ForkDetectorTests
     [Test]
     public async Task Fork_NoGitConfig_ShouldNotSkip()
     {
-        using var temp = new TempDir();
-        var repoDir = Path.Combine(temp.Path, "repo");
+        using var temp = new TempDirectory();
+        var repoDir = Path.Combine(temp, "repo");
         var gitDir = Path.Combine(repoDir, ".git");
         Directory.CreateDirectory(gitDir);
         // No config file inside .git
 
         var solutionPath = Path.Combine(repoDir, "test.sln");
 
-        await Assert.That(ForkDetector.ShouldSkip(temp.Path, solutionPath)).IsFalse();
+        await Assert.That(ForkDetector.ShouldSkip(temp, solutionPath)).IsFalse();
     }
 
     [Test]
     public async Task SolutionInSubdirectory_Fork_ShouldSkip()
     {
-        using var temp = new TempDir();
-        var repoDir = Path.Combine(temp.Path, "forked-repo");
+        using var temp = new TempDirectory();
+        var repoDir = Path.Combine(temp, "forked-repo");
         var srcDir = Path.Combine(repoDir, "src", "MyProject");
         Directory.CreateDirectory(srcDir);
         CreateGitConfig(
@@ -138,7 +138,7 @@ public class ForkDetectorTests
         var solutionPath = Path.Combine(srcDir, "test.sln");
 
         // Target is above the git root, fork discovered via scanning
-        await Assert.That(ForkDetector.ShouldSkip(temp.Path, solutionPath)).IsTrue();
+        await Assert.That(ForkDetector.ShouldSkip(temp, solutionPath)).IsTrue();
     }
 
     static void CreateGitConfig(string repoDir, string configContent)
@@ -147,4 +147,5 @@ public class ForkDetectorTests
         Directory.CreateDirectory(gitDir);
         File.WriteAllText(Path.Combine(gitDir, "config"), configContent);
     }
+
 }
