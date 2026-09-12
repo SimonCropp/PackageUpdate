@@ -20,6 +20,8 @@ static async Task Inner(string directory, string? package, bool build)
     {
         RefreshMemoryCache = true
     };
+    // Multiple solutions can resolve to the same props file, so only update it once
+    var updatedProps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     foreach (var solution in FileSystem.FindSolutions(directory))
     {
         if (ForkDetector.ShouldSkip(directory, solution))
@@ -28,7 +30,7 @@ static async Task Inner(string directory, string? package, bool build)
             continue;
         }
 
-        await TryProcessSolution(cache, solution, package, build, directory);
+        await TryProcessSolution(cache, solution, package, build, directory, updatedProps);
     }
 
     // Tool manifests are scanned independently of solutions, since `.config/dotnet-tools.json`
@@ -52,11 +54,11 @@ static async Task Inner(string directory, string? package, bool build)
     Log.Information("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
 }
 
-static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory)
+static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps)
 {
     try
     {
-        await ProcessSolution(cache, solution, package, build, targetDirectory);
+        await ProcessSolution(cache, solution, package, build, targetDirectory, updatedProps);
     }
     catch (Exception e)
     {
@@ -103,7 +105,7 @@ static async Task ProcessToolManifest(SourceCacheContext cache, string manifest,
     Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
 }
 
-static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory)
+static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps)
 {
     if (Excluder.ShouldExclude(solution))
     {
@@ -122,9 +124,16 @@ static async Task ProcessSolution(SourceCacheContext cache, string solution, str
         return;
     }
 
-    var stopwatch = Stopwatch.StartNew();
-    await Updater.Update(cache, propsLocation, package);
-    Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
+    if (updatedProps.Add(propsLocation))
+    {
+        var stopwatch = Stopwatch.StartNew();
+        await Updater.Update(cache, propsLocation, package);
+        Log.Information("    Updated {Props} in {Elapsed}", propsLocation, Formatter.FormatElapsed(stopwatch.Elapsed));
+    }
+    else
+    {
+        Log.Information("    Already updated: {Props}", propsLocation);
+    }
 
     if (build)
     {

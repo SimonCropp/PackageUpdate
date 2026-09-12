@@ -1,11 +1,11 @@
-static class ForkDetector
+﻿static class ForkDetector
 {
     static ConcurrentDictionary<string, bool> cache = new(StringComparer.OrdinalIgnoreCase);
 
     public static bool ShouldSkip(string targetDirectory, string solutionPath)
     {
         var solutionDir = Path.GetDirectoryName(solutionPath)!;
-        var gitRoot = FindGitRoot(solutionDir);
+        var gitRoot = FileSystem.FindGitRoot(solutionDir);
         if (gitRoot == null)
         {
             return false;
@@ -23,23 +23,6 @@ static class ForkDetector
         // Don't skip if target is at or below the git root (fork was explicitly targeted)
         return !normalizedTarget.Equals(normalizedGitRoot, StringComparison.OrdinalIgnoreCase) &&
                !normalizedTarget.StartsWith(normalizedGitRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
-    }
-
-    static string? FindGitRoot(string directory)
-    {
-        var current = new DirectoryInfo(directory);
-        while (current != null)
-        {
-            var gitPath = Path.Combine(current.FullName, ".git");
-            if (Directory.Exists(gitPath) || File.Exists(gitPath))
-            {
-                return current.FullName;
-            }
-
-            current = current.Parent;
-        }
-
-        return null;
     }
 
     static bool HasUpstreamRemote(string gitRoot)

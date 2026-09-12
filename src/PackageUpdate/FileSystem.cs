@@ -1,8 +1,22 @@
 ﻿static class FileSystem
 {
+    static StringComparison pathComparison = OperatingSystem.IsLinux() ?
+        StringComparison.Ordinal :
+        StringComparison.OrdinalIgnoreCase;
+
     public static string? FindPropsFile(string startDirectory, string stopDirectory)
     {
-        var stop = Path.TrimEndingDirectorySeparator(Path.GetFullPath(stopDirectory));
+        var stop = Normalize(stopDirectory);
+
+        // Never walk above the git root, otherwise a solution in a repo with no props file
+        // can pick up the props file of a sibling or parent repo
+        var gitRoot = FindGitRoot(startDirectory);
+        if (gitRoot is not null &&
+            IsInside(gitRoot, stop))
+        {
+            stop = gitRoot;
+        }
+
         for (var current = new DirectoryInfo(startDirectory); current is not null; current = current.Parent)
         {
             var candidate = Path.Combine(current.FullName, "Directory.Packages.props");
@@ -11,7 +25,11 @@
                 return candidate;
             }
 
-            if (string.Equals(current.FullName, stop, StringComparison.OrdinalIgnoreCase))
+            // Stop at the boundary, and also bail out if the walk is not inside it at all,
+            // which can happen for symlinked or otherwise non matching paths
+            var directory = Normalize(current.FullName);
+            if (string.Equals(directory, stop, pathComparison) ||
+                !IsInside(directory, stop))
             {
                 break;
             }
@@ -19,6 +37,28 @@
 
         return null;
     }
+
+    public static string? FindGitRoot(string directory)
+    {
+        for (var current = new DirectoryInfo(directory); current is not null; current = current.Parent)
+        {
+            var gitPath = Path.Combine(current.FullName, ".git");
+            if (Directory.Exists(gitPath) ||
+                File.Exists(gitPath))
+            {
+                return Normalize(current.FullName);
+            }
+        }
+
+        return null;
+    }
+
+    static string Normalize(string directory) =>
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+
+    static bool IsInside(string directory, string root) =>
+        string.Equals(directory, root, pathComparison) ||
+        directory.StartsWith(root + Path.DirectorySeparatorChar, pathComparison);
 
     public static IEnumerable<string> FindSolutions(string directory)
     {
