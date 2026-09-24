@@ -265,7 +265,7 @@ src/
 
 ## CI/CD
 
-- Uses AppVeyor for builds
+- Uses GitHub Actions for builds (`.github/workflows/build.yml`), publishing to NuGet on a tag via trusted publishing
 - GitHub Actions for milestone releases and documentation
 - Builds with `dotnet build src --configuration Release`
 - Tests with `dotnet test --solution src/PackageUpdate.slnx --configuration Release`
