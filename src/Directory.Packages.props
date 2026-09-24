@@ -5,19 +5,19 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
-    <PackageVersion Include="MarkdownSnippets.MsBuild" Version="28.4.2" />
+    <PackageVersion Include="MarkdownSnippets.MsBuild" Version="28.4.4" />
     <PackageVersion Include="NuGet.Protocol" Version="7.9.0" />
     <PackageVersion Include="ProjectDefaults" Version="1.0.181" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="TUnit" Version="1.69.0" />
-    <PackageVersion Include="Verify.TUnit" Version="33.1.1" />
-    <PackageVersion Include="Microsoft.Sbom.Targets" Version="4.1.12" />
+    <PackageVersion Include="Verify.TUnit" Version="33.1.4" />
+    <PackageVersion Include="Microsoft.Sbom.Targets" Version="4.1.13" />
     <PackageVersion Include="Argon" Version="0.37.0" />
-    <PackageVersion Include="DiffEngine" Version="20.5.0" />
+    <PackageVersion Include="DiffEngine" Version="20.5.1" />
     <PackageVersion Include="EmptyFiles" Version="8.19.0" />
     <PackageVersion Include="SimpleInfoName" Version="3.2.0" />
-    <PackageVersion Include="Verify" Version="33.1.1" />
+    <PackageVersion Include="Verify" Version="33.1.4" />
   </ItemGroup>
 </Project>
