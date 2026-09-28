@@ -87,7 +87,7 @@ class XmlEditor
 
     (int Start, int End) FindStartTag(XElement element)
     {
-        var info = (IXmlLineInfo) element;
+        IXmlLineInfo info = element;
         if (!info.HasLineInfo())
         {
             throw new("Element has no line info");
