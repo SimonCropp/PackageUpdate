@@ -147,5 +147,4 @@ public class ForkDetectorTests
         Directory.CreateDirectory(gitDir);
         File.WriteAllText(Path.Combine(gitDir, "config"), configContent);
     }
-
 }
