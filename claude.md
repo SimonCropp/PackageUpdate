@@ -237,6 +237,7 @@ Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common
 - Respects pre-release semantics (stable → stable, pre-release → any)
 - Queries all configured NuGet sources and selects highest version
 - Skips unlisted packages
+- Respects the `minPublishAgeHours` attribute on a `packageSources` entry in nuget.config (set via `dotnet nuget add/update source --min-publish-age-hours`): versions published more recently than that are skipped for that source. `PackageSourceReader` reads the attribute from the config files directly, since `SourceItem` drops unknown attributes
 
 ### File Format Preservation
 

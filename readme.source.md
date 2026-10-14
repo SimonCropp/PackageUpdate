@@ -1,4 +1,4 @@
-# <img src="/src/icon.png" height="30px"> PackageUpdate
+﻿# <img src="/src/icon.png" height="30px"> PackageUpdate
 
 [![Build status](https://github.com/SimonCropp/PackageUpdate/actions/workflows/build.yml/badge.svg)](https://github.com/SimonCropp/PackageUpdate/actions/workflows/build.yml)
 [![NuGet Status](https://img.shields.io/nuget/v/PackageUpdate.svg)](https://www.nuget.org/packages/PackageUpdate/)
@@ -148,6 +148,23 @@ To use authenticated feed, add the [packageSourceCredentials](https://docs.micro
     <add key="ClearTextPassword" value="api key" />
 </feedName>
 </packageSourceCredentials>
+```
+
+
+## Minimum package publication age
+
+Sources can define a cooldown via the `minPublishAgeHours` attribute in `nuget.config`. Versions published more recently than that are not selected from that source.
+
+```xml
+<packageSources>
+  <add key="nuget.org" value="https://api.nuget.org/v3/index.json" minPublishAgeHours="24" />
+</packageSources>
+```
+
+This can be set via the CLI (.NET 11 SDK):
+
+```
+dotnet nuget update source nuget.org --min-publish-age-hours 24
 ```
 
 

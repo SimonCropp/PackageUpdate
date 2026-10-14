@@ -141,6 +141,7 @@
             var (repository, metadataResource) = await RepositoryReader.Read(source);
 
             var condidates = await GetCondidates(package, currentVersion, cache, repository);
+            var minPublishAge = PackageSourceReader.GetMinPublishAge(source);
 
             foreach (var candidate in condidates)
             {
@@ -153,6 +154,17 @@
                 // Skip unlisted packages
                 if (metadata is not {IsListed: true})
                 {
+                    continue;
+                }
+
+                // Skip versions newer than the source's minPublishAgeHours cooldown
+                if (!IsOldEnough(metadata, minPublishAge))
+                {
+                    Log.Information(
+                        "Skipped {Package} {Version} from {Source}: published within minPublishAgeHours",
+                        package,
+                        candidate,
+                        source.Name);
                     continue;
                 }
 
@@ -169,6 +181,16 @@
 
         latestVersionCache[key] = latestMetadata;
         return latestMetadata;
+    }
+
+    static bool IsOldEnough(IPackageSearchMetadata metadata, TimeSpan? minPublishAge)
+    {
+        if (minPublishAge == null || metadata.Published == null)
+        {
+            return true;
+        }
+
+        return DateTimeOffset.UtcNow - metadata.Published.Value >= minPublishAge.Value;
     }
 
     static async Task<IPackageSearchMetadata?> GetPackageMetadata(
