@@ -14,3 +14,5 @@ global using NuGet.Versioning;
 global using Serilog;
 global using Serilog.Events;
 global using Serilog.Parsing;
+global using System.Globalization;
+global using System.Runtime.CompilerServices;
