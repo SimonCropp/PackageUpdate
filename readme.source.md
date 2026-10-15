@@ -155,6 +155,8 @@ To use authenticated feed, add the [packageSourceCredentials](https://docs.micro
 
 Sources can define a cooldown via the `minPublishAgeHours` attribute in `nuget.config`. Versions published more recently than that are not selected from that source.
 
+This mirrors the NuGet [minimum package publication age](https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/nuget.md#configure-minimum-package-publication-age-from-the-cli) feature.
+
 ```xml
 <packageSources>
   <add key="nuget.org" value="https://api.nuget.org/v3/index.json" minPublishAgeHours="24" />
