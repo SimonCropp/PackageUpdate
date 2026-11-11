@@ -7,12 +7,12 @@ public static class PackageUpdater
         {
             Log.Information("Package: {Package}", package);
         }
-    
+
         if (!Directory.Exists(directory))
         {
             throw new DirectoryNotFoundException($"Target directory does not exist: {directory}");
         }
-    
+
         var totalStopwatch = Stopwatch.StartNew();
         using var cache = new SourceCacheContext
         {
@@ -27,10 +27,10 @@ public static class PackageUpdater
                 Log.Information("  Skipping fork: {Solution}", solution);
                 continue;
             }
-    
+
             await TryProcessSolution(cache, solution, package, build, directory, updatedProps);
         }
-    
+
         // Tool manifests are scanned independently of solutions, since `.config/dotnet-tools.json`
         // usually sits at the repository root while the solution sits in a sub directory
         foreach (var manifest in FileSystem.FindToolManifests(directory))
@@ -40,18 +40,18 @@ public static class PackageUpdater
                 Log.Information("  Skipping fork: {Manifest}", manifest);
                 continue;
             }
-    
+
             await TryProcessToolManifest(cache, manifest, package);
         }
-    
+
         if (build)
         {
             await DotnetStarter.Shutdown();
         }
-    
+
         Log.Information("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
     }
-    
+
     static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps)
     {
         try
@@ -69,7 +69,7 @@ public static class PackageUpdater
                 e.Message);
         }
     }
-    
+
     static async Task TryProcessToolManifest(SourceCacheContext cache, string manifest, string? package)
     {
         try
@@ -87,7 +87,7 @@ public static class PackageUpdater
                 e.Message);
         }
     }
-    
+
     static async Task ProcessToolManifest(SourceCacheContext cache, string manifest, string? package)
     {
         if (Excluder.ShouldExclude(manifest))
@@ -95,14 +95,14 @@ public static class PackageUpdater
             Log.Information("  Exclude: {Manifest}", manifest);
             return;
         }
-    
+
         Log.Information("  {Manifest}", manifest);
-    
+
         var stopwatch = Stopwatch.StartNew();
         await ToolUpdater.Update(cache, manifest, package);
         Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
     }
-    
+
     static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps)
     {
         if (Excluder.ShouldExclude(solution))
@@ -110,18 +110,18 @@ public static class PackageUpdater
             Log.Information("  Exclude: {Solution}", solution);
             return;
         }
-    
+
         Log.Information("  {Solution}", solution);
-    
+
         var solutionDirectory = Directory.GetParent(solution)!.FullName;
-    
+
         var propsLocation = FileSystem.FindPropsFile(solutionDirectory, targetDirectory);
         if (propsLocation is null)
         {
             Log.Error("    Only central packages supported. Skipping: {Solution}", solution);
             return;
         }
-    
+
         if (updatedProps.Add(propsLocation))
         {
             var stopwatch = Stopwatch.StartNew();
@@ -132,7 +132,7 @@ public static class PackageUpdater
         {
             Log.Information("    Already updated: {Props}", propsLocation);
         }
-    
+
         if (build)
         {
             await DotnetStarter.Build(solution);
