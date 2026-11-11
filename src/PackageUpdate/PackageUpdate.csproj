@@ -15,7 +15,7 @@
   <ItemGroup>
     <None Include="nuget.md" Pack="true" PackagePath="" />
     <PackageReference Include="CommandLineParser" />
-    <PackageReference Include="NuGet.Protocol" />
+    <ProjectReference Include="..\PackageUpdateLib\PackageUpdateLib.csproj" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="Sbom" PrivateAssets="all" />
     <PackageReference Include="Serilog" />

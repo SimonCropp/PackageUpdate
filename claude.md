@@ -250,12 +250,15 @@ The Updater detects and preserves:
 
 ```
 src/
-├── PackageUpdate/          # Main tool project (dotnet global tool)
-│   ├── Program.cs          # Entry point and orchestration
+├── PackageUpdate/          # Tool project (dotnet global tool): thin CLI over PackageUpdateLib
+│   ├── Program.cs          # Entry point, calls PackageUpdater.Run
+│   ├── CommandRunner.cs    # CLI parsing
+│   └── Logging.cs          # Serilog console/file setup
+├── PackageUpdateLib/       # Library package with all update logic
+│   ├── PackageUpdater.cs   # Public orchestration entry point (Run)
 │   ├── Updater.cs          # Core update logic
 │   ├── ToolUpdater.cs      # dotnet-tools.json update logic
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
-│   ├── CommandRunner.cs    # CLI parsing
 │   ├── FileSystem.cs       # Solution and tool manifest discovery
 │   ├── PackageSourceReader.cs  # NuGet source config
 │   └── ...

@@ -15,6 +15,7 @@
     <PackageReference Include="TUnit" />
     <PackageReference Include="MarkdownSnippets.MsBuild" PrivateAssets="all" />
     <ProjectReference Include="..\PackageUpdate\PackageUpdate.csproj" />
+    <ProjectReference Include="..\PackageUpdateLib\PackageUpdateLib.csproj" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>PackageUpdateLib</PackageId>
+    <Description>Library that updates NuGet packages for all solutions in a directory. Powers the PackageUpdate dotnet tool.</Description>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <PackageReadmeFile>nuget.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\PackageUpdate\nuget.md" Pack="true" PackagePath="" />
+    <PackageReference Include="NuGet.Protocol" />
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="Sbom" PrivateAssets="all" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+</Project>
