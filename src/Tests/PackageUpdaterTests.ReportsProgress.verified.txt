@@ -1,0 +1,36 @@
+﻿[
+  {
+    File: Sample.slnx,
+    FileNumber: 1,
+    FileCount: 2
+  },
+  {
+    File: Sample.slnx,
+    FileNumber: 1,
+    FileCount: 2,
+    Package: Newtonsoft.Json,
+    PackageNumber: 1,
+    PackageCount: 2
+  },
+  {
+    File: Sample.slnx,
+    FileNumber: 1,
+    FileCount: 2,
+    Package: NUnit,
+    PackageNumber: 2,
+    PackageCount: 2
+  },
+  {
+    File: .config/dotnet-tools.json,
+    FileNumber: 2,
+    FileCount: 2
+  },
+  {
+    File: .config/dotnet-tools.json,
+    FileNumber: 2,
+    FileCount: 2,
+    Package: dotnet-ef,
+    PackageNumber: 1,
+    PackageCount: 1
+  }
+]
