@@ -3,10 +3,12 @@
     static ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> metadataCache = new(PackageCacheKeyComparer.Instance);
     static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestVersionCache = new(PackageCacheKeyComparer.Instance);
 
+    /// <param name="packageStarted">Told each package, its position from 1, and how many there are, as checking it starts.</param>
     public static async Task Update(
         SourceCacheContext cache,
         string directoryPackagesPropsPath,
-        string? packageName)
+        string? packageName,
+        Action<string, int, int>? packageStarted = null)
     {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
@@ -49,8 +51,12 @@
         var migrations = new List<(string OldPackage, string NewPackage)>();
 
         // Update each package
+        var packageNumber = 0;
         foreach (var package in packageVersions)
         {
+            packageNumber++;
+            packageStarted?.Invoke(package.Package!, packageNumber, packageVersions.Count);
+
             if (!NuGetVersion.TryParse(package.CurrentVersion, out var currentVersion))
             {
                 continue;

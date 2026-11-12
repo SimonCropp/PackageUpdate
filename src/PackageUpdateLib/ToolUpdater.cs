@@ -3,7 +3,8 @@ public static class ToolUpdater
     public static async Task Update(
         SourceCacheContext cache,
         string manifestPath,
-        string? packageName)
+        string? packageName,
+        Action<string, int, int>? packageStarted = null)
     {
         var bytes = await File.ReadAllBytesAsync(manifestPath);
 
@@ -43,8 +44,12 @@ public static class ToolUpdater
 
         var updates = new List<(ToolEntry Tool, NuGetVersion Version)>();
 
+        var toolNumber = 0;
         foreach (var tool in candidates)
         {
+            toolNumber++;
+            packageStarted?.Invoke(tool.Package, toolNumber, candidates.Count);
+
             if (!NuGetVersion.TryParse(tool.Version, out var currentVersion))
             {
                 continue;
