@@ -8,9 +8,9 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\PackageUpdate\nuget.md" Pack="true" PackagePath="" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="NuGet.Protocol" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="Sbom" PrivateAssets="all" />
-    <PackageReference Include="Serilog" />
   </ItemGroup>
 </Project>

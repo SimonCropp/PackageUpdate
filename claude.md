@@ -253,9 +253,11 @@ src/
 ├── PackageUpdate/          # Tool project (dotnet global tool): thin CLI over PackageUpdateLib
 │   ├── Program.cs          # Entry point, calls PackageUpdater.Run
 │   ├── CommandRunner.cs    # CLI parsing
-│   └── Logging.cs          # Serilog console/file setup
-├── PackageUpdateLib/       # Library package with all update logic
+│   └── Logging.cs          # Serilog console/file setup, bridged to an ILogger for the lib
+├── PackageUpdateLib/       # Library package with all update logic. Logs only via a passed in
+│   │                       # Microsoft.Extensions.Logging ILogger (no Serilog reference)
 │   ├── PackageUpdater.cs   # Public orchestration entry point (Run)
+│   ├── NuGetLogger.cs      # Forwards NuGet.Protocol logging to that ILogger
 │   ├── Updater.cs          # Core update logic
 │   ├── ToolUpdater.cs      # dotnet-tools.json update logic
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes

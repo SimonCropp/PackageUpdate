@@ -1,18 +1,23 @@
 public static class PackageUpdater
 {
     public static Task Run(string directory, string? package, bool build) =>
-        Run(directory, package, build, null);
+        Run(directory, package, build, null, null);
+
+    public static Task Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress) =>
+        Run(directory, package, build, progress, null);
 
     /// <summary>
     /// Updates the packages of every solution under the directory, then the tools of every
     /// dotnet-tools.json under it, reporting each file and each package as it starts on it.
     /// </summary>
-    public static async Task Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress)
+    /// <param name="logger">Told what is updated, skipped, or fails. Nothing is logged when null.</param>
+    public static async Task Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress, ILogger? logger)
     {
-        Log.Information("TargetDirectory: {TargetDirectory}", directory);
+        logger ??= NullLogger.Instance;
+        logger.LogInformation("TargetDirectory: {TargetDirectory}", directory);
         if (package != null)
         {
-            Log.Information("Package: {Package}", package);
+            logger.LogInformation("Package: {Package}", package);
         }
 
         if (!Directory.Exists(directory))
@@ -29,11 +34,11 @@ public static class PackageUpdater
         var updatedProps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Found up front, so progress can say how many there are.
-        var solutions = WithoutForks(directory, FileSystem.FindSolutions(directory));
+        var solutions = WithoutForks(directory, FileSystem.FindSolutions(directory), logger);
 
         // Tool manifests are scanned independently of solutions, since `.config/dotnet-tools.json`
         // usually sits at the repository root while the solution sits in a sub directory
-        var manifests = WithoutForks(directory, FileSystem.FindToolManifests(directory));
+        var manifests = WithoutForks(directory, FileSystem.FindToolManifests(directory), logger);
 
         var fileCount = solutions.Count + manifests.Count;
         var fileNumber = 0;
@@ -41,32 +46,32 @@ public static class PackageUpdater
         {
             fileNumber++;
             var packageStarted = ReportStart(progress, solution, fileNumber, fileCount);
-            await TryProcessSolution(cache, solution, package, build, directory, updatedProps, packageStarted);
+            await TryProcessSolution(cache, solution, package, build, directory, updatedProps, packageStarted, logger);
         }
 
         foreach (var manifest in manifests)
         {
             fileNumber++;
             var packageStarted = ReportStart(progress, manifest, fileNumber, fileCount);
-            await TryProcessToolManifest(cache, manifest, package, packageStarted);
+            await TryProcessToolManifest(cache, manifest, package, packageStarted, logger);
         }
 
         if (build)
         {
-            await DotnetStarter.Shutdown();
+            await DotnetStarter.Shutdown(logger);
         }
 
-        Log.Information("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
+        logger.LogInformation("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
     }
 
-    static List<string> WithoutForks(string directory, IEnumerable<string> files)
+    static List<string> WithoutForks(string directory, IEnumerable<string> files, ILogger logger)
     {
         var kept = new List<string>();
         foreach (var file in files)
         {
             if (ForkDetector.ShouldSkip(directory, file))
             {
-                Log.Information("  Skipping fork: {File}", file);
+                logger.LogInformation("  Skipping fork: {File}", file);
                 continue;
             }
 
@@ -89,15 +94,15 @@ public static class PackageUpdater
             progress.Report(new(file, fileNumber, fileCount, package, packageNumber, packageCount));
     }
 
-    static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted)
+    static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted, ILogger logger)
     {
         try
         {
-            await ProcessSolution(cache, solution, package, build, targetDirectory, updatedProps, packageStarted);
+            await ProcessSolution(cache, solution, package, build, targetDirectory, updatedProps, packageStarted, logger);
         }
         catch (Exception e)
         {
-            Log.Error(
+            logger.LogError(
                 """
                 Failed to process solution: {Solution}.
                 Error: {Message}
@@ -107,15 +112,15 @@ public static class PackageUpdater
         }
     }
 
-    static async Task TryProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted)
+    static async Task TryProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted, ILogger logger)
     {
         try
         {
-            await ProcessToolManifest(cache, manifest, package, packageStarted);
+            await ProcessToolManifest(cache, manifest, package, packageStarted, logger);
         }
         catch (Exception e)
         {
-            Log.Error(
+            logger.LogError(
                 """
                 Failed to process tool manifest: {Manifest}.
                 Error: {Message}
@@ -125,54 +130,54 @@ public static class PackageUpdater
         }
     }
 
-    static async Task ProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted)
+    static async Task ProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted, ILogger logger)
     {
         if (Excluder.ShouldExclude(manifest))
         {
-            Log.Information("  Exclude: {Manifest}", manifest);
+            logger.LogInformation("  Exclude: {Manifest}", manifest);
             return;
         }
 
-        Log.Information("  {Manifest}", manifest);
+        logger.LogInformation("  {Manifest}", manifest);
 
         var stopwatch = Stopwatch.StartNew();
-        await ToolUpdater.Update(cache, manifest, package, packageStarted);
-        Log.Information("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
+        await ToolUpdater.Update(cache, manifest, package, packageStarted, logger);
+        logger.LogInformation("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
     }
 
-    static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted)
+    static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted, ILogger logger)
     {
         if (Excluder.ShouldExclude(solution))
         {
-            Log.Information("  Exclude: {Solution}", solution);
+            logger.LogInformation("  Exclude: {Solution}", solution);
             return;
         }
 
-        Log.Information("  {Solution}", solution);
+        logger.LogInformation("  {Solution}", solution);
 
         var solutionDirectory = Directory.GetParent(solution)!.FullName;
 
         var propsLocation = FileSystem.FindPropsFile(solutionDirectory, targetDirectory);
         if (propsLocation is null)
         {
-            Log.Error("    Only central packages supported. Skipping: {Solution}", solution);
+            logger.LogError("    Only central packages supported. Skipping: {Solution}", solution);
             return;
         }
 
         if (updatedProps.Add(propsLocation))
         {
             var stopwatch = Stopwatch.StartNew();
-            await Updater.Update(cache, propsLocation, package, packageStarted);
-            Log.Information("    Updated {Props} in {Elapsed}", propsLocation, Formatter.FormatElapsed(stopwatch.Elapsed));
+            await Updater.Update(cache, propsLocation, package, packageStarted, logger);
+            logger.LogInformation("    Updated {Props} in {Elapsed}", propsLocation, Formatter.FormatElapsed(stopwatch.Elapsed));
         }
         else
         {
-            Log.Information("    Already updated: {Props}", propsLocation);
+            logger.LogInformation("    Already updated: {Props}", propsLocation);
         }
 
         if (build)
         {
-            await DotnetStarter.Build(solution);
+            await DotnetStarter.Build(solution, logger);
         }
     }
 }
