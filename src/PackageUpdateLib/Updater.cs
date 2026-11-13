@@ -8,8 +8,10 @@
         SourceCacheContext cache,
         string directoryPackagesPropsPath,
         string? packageName,
-        Action<string, int, int>? packageStarted = null)
+        Action<string, int, int>? packageStarted = null,
+        ILogger? logger = null)
     {
+        logger ??= NullLogger.Instance;
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
         // Load the XML document. The editor splices updates into the original text so
@@ -40,7 +42,7 @@
 
             if (packageVersions.Count == 0)
             {
-                Log.Warning("Package {Package} not found in {FilePath}", packageName, directoryPackagesPropsPath);
+                logger.LogWarning("Package {Package} not found in {FilePath}", packageName, directoryPackagesPropsPath);
                 return;
             }
         }
@@ -67,7 +69,8 @@
                 package.Package!,
                 currentVersion,
                 sources,
-                cache);
+                cache,
+                logger);
 
             if (currentMetadata != null)
             {
@@ -81,7 +84,8 @@
                         deprecation,
                         sources,
                         cache,
-                        xml);
+                        xml,
+                        logger);
 
                     if (migration != null)
                     {
@@ -97,7 +101,8 @@
                 package.Package!,
                 currentVersion,
                 sources,
-                cache);
+                cache,
+                logger);
 
             if (latestMetadata == null)
             {
@@ -113,7 +118,7 @@
 
             // Update the Version attribute
             editor.SetAttribute(package.Element, "Version", latestVersion.ToString());
-            Log.Information("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
+            logger.LogInformation("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
         }
 
         await editor.Save(directoryPackagesPropsPath);
@@ -121,19 +126,21 @@
         // Update PackageReference entries in csproj files for migrated packages
         if (migrations.Count > 0)
         {
-            await UpdateCsprojFiles(directory, migrations);
+            await UpdateCsprojFiles(directory, migrations, logger);
         }
 
         // Update VersionOverride entries in csproj files (e.g. test projects tracking a pre-release)
-        await UpdateVersionOverrides(directory, packageName, sources, cache);
+        await UpdateVersionOverrides(directory, packageName, sources, cache, logger);
     }
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
         string package,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
-        SourceCacheContext cache)
+        SourceCacheContext cache,
+        ILogger? logger = null)
     {
+        logger ??= NullLogger.Instance;
         var key = (package, currentVersion);
         if (latestVersionCache.TryGetValue(key, out var cached))
         {
@@ -146,7 +153,7 @@
         {
             var (repository, metadataResource) = await RepositoryReader.Read(source);
 
-            var condidates = await GetCondidates(package, currentVersion, cache, repository);
+            var condidates = await GetCondidates(package, currentVersion, cache, repository, logger);
             var minPublishAge = PackageSourceReader.GetMinPublishAge(source);
 
             foreach (var candidate in condidates)
@@ -154,7 +161,7 @@
                 var metadata = await metadataResource.GetMetadataAsync(
                     new(package, candidate),
                     cache,
-                    SerilogNuGetLogger.Instance,
+                    new NuGetLogger(logger),
                     Cancel.None);
 
                 // Skip unlisted packages
@@ -166,7 +173,7 @@
                 // Skip versions newer than the source's minPublishAgeHours cooldown
                 if (!IsOldEnough(metadata, minPublishAge))
                 {
-                    Log.Information(
+                    logger.LogInformation(
                         "Skipped {Package} {Version} from {Source}: published within minPublishAgeHours",
                         package,
                         candidate,
@@ -203,7 +210,8 @@
         string package,
         NuGetVersion version,
         List<PackageSource> sources,
-        SourceCacheContext cache)
+        SourceCacheContext cache,
+        ILogger logger)
     {
         var key = (package, version);
         if (metadataCache.TryGetValue(key, out var cached))
@@ -218,7 +226,7 @@
             var metadata = await metadataResource.GetMetadataAsync(
                 new(package, version),
                 cache,
-                SerilogNuGetLogger.Instance,
+                new NuGetLogger(logger),
                 Cancel.None);
 
             if (metadata != null)
@@ -239,13 +247,14 @@
         PackageDeprecationMetadata deprecation,
         List<PackageSource> sources,
         SourceCacheContext cache,
-        XDocument xml)
+        XDocument xml,
+        ILogger logger)
     {
         // Check if alternate package exists
         var alternateId = deprecation.AlternatePackage?.PackageId;
         if (alternateId == null)
         {
-            Log.Warning(
+            logger.LogWarning(
                 "Package {Package} is deprecated but has no alternative. Reasons: {Reasons}",
                 currentPackage,
                 string.Join(", ", deprecation.Reasons));
@@ -262,7 +271,7 @@
 
         if (existingAlternate != null)
         {
-            Log.Warning(
+            logger.LogWarning(
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative already exists",
                 currentPackage,
                 alternateId);
@@ -275,11 +284,12 @@
             // Start from 0.0.0 to get any version
             new(0, 0, 0),
             sources,
-            cache);
+            cache,
+            logger);
 
         if (alternateMetadata == null)
         {
-            Log.Warning(
+            logger.LogWarning(
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative not found in sources",
                 currentPackage,
                 alternateId);
@@ -293,7 +303,7 @@
         var targetVersion = alternateMetadata.Identity.Version;
         editor.SetAttribute(packageElement, "Version", targetVersion.ToString());
 
-        Log.Information(
+        logger.LogInformation(
             "Migrated {OldPackage} -> {NewPackage} (Version: {Version}) [Deprecated: {Reasons}]",
             currentPackage,
             alternateId,
@@ -303,7 +313,7 @@
         return (currentPackage, alternateId);
     }
 
-    static async Task UpdateCsprojFiles(string directory, List<(string OldPackage, string NewPackage)> migrations)
+    static async Task UpdateCsprojFiles(string directory, List<(string OldPackage, string NewPackage)> migrations, ILogger logger)
     {
         // Find all csproj files recursively
         var csprojFiles = EnumerateCsprojFiles(directory);
@@ -324,7 +334,7 @@
                 foreach (var packageRef in packageReferences)
                 {
                     editor.SetAttribute(packageRef, "Include", newPackage);
-                    Log.Information(
+                    logger.LogInformation(
                         "Updated PackageReference {OldPackage} -> {NewPackage} in {File}",
                         oldPackage,
                         newPackage,
@@ -340,7 +350,8 @@
         string directory,
         string? packageName,
         List<PackageSource> sources,
-        SourceCacheContext cache)
+        SourceCacheContext cache,
+        ILogger logger)
     {
         foreach (var csprojPath in EnumerateCsprojFiles(directory))
         {
@@ -379,7 +390,8 @@
                     packageOverride.Package!,
                     currentVersion,
                     sources,
-                    cache);
+                    cache,
+                    logger);
 
                 if (latestMetadata == null)
                 {
@@ -394,7 +406,7 @@
                 }
 
                 editor.SetAttribute(packageOverride.Element, "VersionOverride", latestVersion.ToString());
-                Log.Information(
+                logger.LogInformation(
                     "Updated {Package} VersionOverride: {NuGetVersion} -> {LatestVersion} in {File}",
                     packageOverride.Package,
                     currentVersion,
@@ -445,7 +457,7 @@
         }
     }
 
-    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository)
+    static async Task<List<NuGetVersion>> GetCondidates(string package, NuGetVersion currentVersion, SourceCacheContext cache, SourceRepository repository, ILogger logger)
     {
         // Use FindPackageByIdResource to efficiently get version list
         var findResource = await repository.GetResourceAsync<FindPackageByIdResource>() ??
@@ -454,7 +466,7 @@
         var versions = await findResource.GetAllVersionsAsync(
             package,
             cache,
-            SerilogNuGetLogger.Instance,
+            new NuGetLogger(logger),
             Cancel.None);
 
         return versions

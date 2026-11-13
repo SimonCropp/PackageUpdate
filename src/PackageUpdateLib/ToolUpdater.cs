@@ -4,8 +4,10 @@ public static class ToolUpdater
         SourceCacheContext cache,
         string manifestPath,
         string? packageName,
-        Action<string, int, int>? packageStarted = null)
+        Action<string, int, int>? packageStarted = null,
+        ILogger? logger = null)
     {
+        logger ??= NullLogger.Instance;
         var bytes = await File.ReadAllBytesAsync(manifestPath);
 
         List<ToolEntry> tools;
@@ -15,7 +17,7 @@ public static class ToolUpdater
         }
         catch (JsonException exception)
         {
-            Log.Warning(
+            logger.LogWarning(
                 "Failed to parse tool manifest {FilePath}. Error: {Message}",
                 manifestPath,
                 exception.Message);
@@ -59,7 +61,8 @@ public static class ToolUpdater
                 tool.Package,
                 currentVersion,
                 sources,
-                cache);
+                cache,
+                logger);
 
             if (latestMetadata == null)
             {
@@ -74,7 +77,7 @@ public static class ToolUpdater
             }
 
             updates.Add((tool, latestVersion));
-            Log.Information("Updated tool {Package}: {NuGetVersion} -> {LatestVersion}", tool.Package, currentVersion, latestVersion);
+            logger.LogInformation("Updated tool {Package}: {NuGetVersion} -> {LatestVersion}", tool.Package, currentVersion, latestVersion);
         }
 
         if (updates.Count == 0)

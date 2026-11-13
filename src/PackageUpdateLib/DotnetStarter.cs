@@ -1,22 +1,24 @@
 ﻿static class DotnetStarter
 {
-    public static Task Build(string solution)
+    public static Task Build(string solution, ILogger logger)
     {
-        Log.Information("    Build {Solution}", solution);
+        logger.LogInformation("    Build {Solution}", solution);
         return StartDotNet(
             arguments: $"build {solution} --nologo",
+            logger: logger,
             directory: Directory.GetParent(solution)!.FullName);
     }
 
-    public static Task Shutdown()
+    public static Task Shutdown(ILogger logger)
     {
-        Log.Information("Shutdown dotnet build");
+        logger.LogInformation("Shutdown dotnet build");
         return StartDotNet(
             arguments: "build-server shutdown",
+            logger: logger,
             directory: Environment.CurrentDirectory);
     }
 
-    static async Task<List<string>> StartDotNet(string arguments, string directory)
+    static async Task<List<string>> StartDotNet(string arguments, ILogger logger, string directory)
     {
         using var process = new Process();
         process.StartInfo = new()
@@ -30,7 +32,7 @@
             CreateNoWindow = true
         };
         process.Start();
-        Log.Information("    dotnet {Arguments}", arguments);
+        logger.LogInformation("    dotnet {Arguments}", arguments);
 
         if (!process.WaitForExit(60000))
         {
