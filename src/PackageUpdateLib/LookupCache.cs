@@ -24,5 +24,5 @@ class LookupCache
     static string Key(List<PackageSource> sources) =>
         string.Join(
             '\n',
-            sources.Select(_ => $"{_.Source} {PackageSourceReader.GetMinPublishAge(_)}"));
+            sources.Select(_ => $"{_.Source} {_.MinPublishAge}"));
 }

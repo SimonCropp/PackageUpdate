@@ -21,27 +21,32 @@ public class PackageSourceReaderTests
 
         var publicSource = sources.Single(_ => _.Name == "public");
         var otherSource = sources.Single(_ => _.Name == "other");
-        await Assert.That(PackageSourceReader.GetMinPublishAge(publicSource)).IsEqualTo(TimeSpan.FromHours(24));
-        await Assert.That(PackageSourceReader.GetMinPublishAge(otherSource)).IsNull();
+        await Assert.That(publicSource.MinPublishAge).IsEqualTo(TimeSpan.FromHours(24));
+        await Assert.That(otherSource.MinPublishAge).IsEqualTo(TimeSpan.Zero);
     }
 
+    // NuGet only accepts whole hours, and fails restore on anything else
     [Test]
-    public async Task GetLatestVersion_SkipsVersionsWithinMinPublishAge()
+    [Arguments("1.5")]
+    [Arguments("-1")]
+    [Arguments("abc")]
+    public async Task RejectsMinPublishAgeHoursThatAreNotWholeHours(string hours)
     {
-        using var cache = new SourceCacheContext
-        {
-            RefreshMemoryCache = true
-        };
-        var source = new PackageSource("https://api.nuget.org/v3/index.json");
-        // Larger than the age of any published version
-        PackageSourceReader.SetMinPublishAge(source, TimeSpan.FromDays(365 * 100));
+        using var temp = new TempDirectory();
+        await File.WriteAllTextAsync(
+            Path.Combine(temp, "nuget.config"),
+            $"""
+             <?xml version="1.0" encoding="utf-8"?>
+             <configuration>
+               <packageSources>
+                 <clear />
+                 <add key="public" value="https://api.nuget.org/v3/index.json" minPublishAgeHours="{hours}" />
+               </packageSources>
+             </configuration>
+             """);
 
-        var result = await Updater.GetLatestVersion(
-            "Newtonsoft.Json",
-            NuGetVersion.Parse("12.0.2"),
-            [source],
-            cache);
+        var read = () => PackageSourceReader.Read(temp);
 
-        await Assert.That(result).IsNull();
+        await Assert.That(read).Throws<NuGetConfigurationException>();
     }
 }
