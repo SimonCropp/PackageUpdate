@@ -43,7 +43,7 @@
         var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
 
-        using var cancel = new CancellationTokenSource(timeout);
+        using var cancel = new CancelSource(timeout);
         try
         {
             await process.WaitForExitAsync(cancel.Token);
