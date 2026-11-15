@@ -1,10 +1,12 @@
 ﻿static class DotnetStarter
 {
+    static TimeSpan timeout = TimeSpan.FromSeconds(60);
+
     public static Task Build(string solution, ILogger logger)
     {
         logger.LogInformation("    Build {Solution}", solution);
         return StartDotNet(
-            arguments: $"build {solution} --nologo",
+            arguments: ["build", solution, "--nologo"],
             logger: logger,
             directory: Directory.GetParent(solution)!.FullName);
     }
@@ -13,52 +15,64 @@
     {
         logger.LogInformation("Shutdown dotnet build");
         return StartDotNet(
-            arguments: "build-server shutdown",
+            arguments: ["build-server", "shutdown"],
             logger: logger,
             directory: Environment.CurrentDirectory);
     }
 
-    static async Task<List<string>> StartDotNet(string arguments, ILogger logger, string directory)
+    static async Task StartDotNet(string[] arguments, ILogger logger, string directory)
     {
-        using var process = new Process();
-        process.StartInfo = new()
+        // ArgumentList quotes each argument, so a path with spaces stays one argument
+        var startInfo = new ProcessStartInfo("dotnet", arguments)
         {
-            FileName = "dotnet",
-            Arguments = arguments,
             WorkingDirectory = directory,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        process.Start();
-        logger.LogInformation("    dotnet {Arguments}", arguments);
+        var command = $"dotnet {string.Join(' ', arguments)}";
 
-        if (!process.WaitForExit(60000))
+        using var process = new Process();
+        process.StartInfo = startInfo;
+        process.Start();
+        logger.LogInformation("    {Command}", command);
+
+        // Read both streams while waiting. Otherwise, once the output fills the pipe buffer,
+        // dotnet blocks on writing it and never exits
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+
+        using var cancel = new CancellationTokenSource(timeout);
+        try
+        {
+            await process.WaitForExitAsync(cancel.Token);
+        }
+        catch (OperationCanceledException)
         {
             process.Kill(true);
             throw new(
                 $"""
-                 Command: dotnet {arguments}
+                 Command: {command}
                  Timed out
                  WorkingDirectory: {directory}
                  """);
         }
 
+        await Task.WhenAll(output, error);
+
         if (process.ExitCode == 0)
         {
-            return await process.ReadLines();
+            return;
         }
 
-        var error = await process.StandardError.ReadToEndAsync();
-        var output = await process.StandardOutput.ReadToEndAsync();
         throw new(
             $"""
-             Command: dotnet {arguments}
+             Command: {command}
              WorkingDirectory: {directory}
              ExitCode: {process.ExitCode}
-             Error: {error}
-             Output: {output}
+             Error: {await error}
+             Output: {await output}
              """);
     }
 }
