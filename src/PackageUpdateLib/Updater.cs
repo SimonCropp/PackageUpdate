@@ -42,7 +42,7 @@
                 Element = element,
                 Package = element.Attribute("Include")?.Value,
                 CurrentVersion = element.Attribute("Version")?.Value,
-                Pinned = element.Attribute("Pinned")?.Value == "true"
+                Pinned = IsPinned(element)
             })
             .Where(_ => _.Package != null &&
                         _.CurrentVersion != null &&
@@ -202,6 +202,14 @@
 
             foreach (var candidate in condidates)
             {
+                // Candidates are newest first, so once one is no newer than the best from an earlier
+                // source, none of the rest can beat it either. Stop before fetching their metadata
+                if (latestMetadata != null &&
+                    candidate <= latestMetadata.Identity.Version)
+                {
+                    break;
+                }
+
                 var metadata = await metadataResource.GetMetadataAsync(
                     new(package, candidate),
                     cache,
@@ -227,14 +235,9 @@
                     continue;
                 }
 
-                // Found a listed version - check if it's better than what we have
-                if (latestMetadata == null ||
-                    candidate > latestMetadata.Identity.Version)
-                {
-                    // Found the best version from this source
-                    latestMetadata = metadata;
-                    break;
-                }
+                // The newest selectable version from this source, and newer than any from earlier sources
+                latestMetadata = metadata;
+                break;
             }
         }
 
@@ -467,7 +470,7 @@
                     Element = element,
                     Package = element.Attribute("Include")?.Value,
                     CurrentOverride = element.Attribute("VersionOverride")?.Value,
-                    Pinned = element.Attribute("Pinned")?.Value == "true"
+                    Pinned = IsPinned(element)
                 })
                 .Where(_ => _.Package != null &&
                             _.CurrentOverride != null &&
@@ -526,6 +529,10 @@
             }
         }
     }
+
+    // MSBuild treats booleans case-insensitively, so Pinned="True" pins as well as Pinned="true"
+    static bool IsPinned(XElement element) =>
+        string.Equals(element.Attribute("Pinned")?.Value, "true", StringComparison.OrdinalIgnoreCase);
 
     static IEnumerable<string> EnumerateCsprojFiles(string directory)
     {

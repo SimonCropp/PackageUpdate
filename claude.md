@@ -104,7 +104,7 @@ packageupdate --build
 
 - **Updater.cs**: Core update and migration logic
   - Parses `Directory.Packages.props` XML
-  - Respects `Pinned="true"` attribute to skip packages
+  - Respects `Pinned="true"` attribute to skip packages, on `PackageVersion` and on `PackageReference` with a `VersionOverride`. Matched case-insensitively (`Updater.IsPinned`), like MSBuild booleans
   - Queries NuGet sources for latest versions via NuGet.Protocol API
   - Detects deprecated packages and auto-migrates to alternatives when current version is deprecated
   - Preserves file formatting (newlines, indentation, trailing newlines)
@@ -242,7 +242,7 @@ Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common
 - Uses `FindPackageByIdResource` to query all versions efficiently
 - Filters to only consider versions greater than current
 - Respects pre-release semantics (stable → stable, pre-release → any)
-- Queries all configured NuGet sources and selects highest version
+- Queries all configured NuGet sources and selects highest version. Each source's candidates are newest first, so a source stops at the first candidate no newer than the best found so far, without fetching metadata for the rest
 - Skips unlisted packages
 - Respects the NuGet 8.0 [minimum package publish age](https://learn.microsoft.com/nuget/consume-packages/minimum-package-publish-age): the `minPublishAgeHours` attribute on a `packageSources` entry in nuget.config (set via `dotnet nuget add/update source --min-publish-age-hours`). Versions published more recently than that are skipped for that source
   - NuGet.Configuration reads the attribute onto `PackageSource.MinPublishAge` (zero when not set). A value that is not whole hours throws `NuGetConfigurationException` when settings load, which fails the solution or tool manifest as restore would. Do not parse the attribute by hand

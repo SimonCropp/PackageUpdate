@@ -569,6 +569,47 @@ public class UpdaterTests
         await Assert.That(result).DoesNotContain("NUnit\" Version=\"3.13.0\"");
     }
 
+    // MSBuild treats booleans case-insensitively, so Pinned is matched the same way
+    [Test]
+    public async Task UpdateRespectsPinnedIgnoringCase()
+    {
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
+        using var directory = new TempDirectory();
+        await File.WriteAllTextAsync(Path.Combine(directory, "nuget.config"), nugetConfigOnlyOrg);
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+        await File.WriteAllTextAsync(
+            packagesPath,
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Newtonsoft.Json" Version="12.0.1" Pinned="True" />
+                <PackageVersion Include="NUnit" Version="3.13.0" />
+              </ItemGroup>
+            </Project>
+            """);
+        var csprojPath = Path.Combine(directory, "Project.csproj");
+        await File.WriteAllTextAsync(
+            csprojPath,
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="NUnit" VersionOverride="3.13.0" Pinned="TRUE" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        await Updater.Update(cache, packagesPath, null);
+
+        var packages = await File.ReadAllTextAsync(packagesPath);
+        await Assert.That(packages).Contains("Newtonsoft.Json\" Version=\"12.0.1\" Pinned=\"True\"");
+        await Assert.That(packages).DoesNotContain("NUnit\" Version=\"3.13.0\"");
+        var csproj = await File.ReadAllTextAsync(csprojPath);
+        await Assert.That(csproj).Contains("VersionOverride=\"3.13.0\" Pinned=\"TRUE\"");
+    }
+
     [Test]
     public async Task UpdateAllPackagesArePinned()
     {

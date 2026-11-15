@@ -188,7 +188,7 @@ Packages can be exempted from the cooldown, on every source, with `minPublishAge
 
 ### Overview
 
-prevent specific packages from being automatically updated by adding the `Pinned="true"` attribute to package entries in the `Directory.Packages.props` file.
+prevent specific packages from being automatically updated by adding the `Pinned="true"` attribute to package entries in the `Directory.Packages.props` file. The value is case-insensitive, like other MSBuild booleans, so `Pinned="True"` also pins.
 
 
 ### Usage
