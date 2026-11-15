@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <PackageId>PackageUpdateLib</PackageId>
     <Description>Library that updates NuGet packages for all solutions in a directory. Powers the PackageUpdate dotnet tool.</Description>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -8,7 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\PackageUpdate\nuget.md" Pack="true" PackagePath="" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="NuGet.Protocol" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="Sbom" PrivateAssets="all" />
