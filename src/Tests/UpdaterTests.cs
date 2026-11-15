@@ -125,12 +125,19 @@ public class UpdaterTests
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(cache, tempFile.Path, "NonExistentPackage");
+        var update = await Updater.Update(cache, tempFile.Path, "NonExistentPackage");
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
         // File should be unchanged
         await Assert.That(result).IsEqualTo(content);
+
+        await Assert.That(update.Changes).IsEmpty();
+        var problem = update.Problems.Single();
+        await Assert.That(problem.Kind).IsEqualTo(UpdateProblemKind.PackageNotFound);
+        await Assert.That(problem.Package).IsEqualTo("NonExistentPackage");
+        await Assert.That(problem.File).IsEqualTo(tempFile.Path);
+        await Assert.That(update.Succeeded).IsTrue();
     }
 
     [Test]
@@ -926,7 +933,13 @@ public class UpdaterTests
 
         using var tempFile = await TempFile.CreateText(content);
 
-        await Updater.Update(cache, tempFile.Path, null);
+        var update = await Updater.Update(cache, tempFile.Path, null);
+
+        var problem = update.Problems.Single();
+        await Assert.That(problem.Kind).IsEqualTo(UpdateProblemKind.AlternativeAlreadyPresent);
+        await Assert.That(problem.Package).IsEqualTo("WindowsAzure.Storage");
+        await Assert.That(problem.IsFailure).IsFalse();
+        await Assert.That(update.Changes.Any(_ => _.Kind == PackageChangeKind.Migration)).IsFalse();
 
         var result = await File.ReadAllTextAsync(tempFile.Path);
 
@@ -1094,6 +1107,64 @@ public class UpdaterTests
         await Assert.That(csprojResult).DoesNotContain("WindowsAzure.Storage");
         await Assert.That(
             csprojResult.Contains("Azure.Storage.Common") || csprojResult.Contains("Azure.Storage.Blobs")).IsTrue();
+    }
+
+    // A migration is one change, naming the csproj files whose references it renamed, rather than
+    // a change for the props and another for each csproj.
+    [Test]
+    public async Task MigrationIsOneChangeListingItsProjects()
+    {
+        var directoryPackages =
+            """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var referencing =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="WindowsAzure.Storage" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        var unrelated =
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var cache = new SourceCacheContext
+        {
+            RefreshMemoryCache = true
+        };
+
+        using var directory = new TempDirectory();
+        var packagesPath = Path.Combine(directory, "Directory.Packages.props");
+        var referencingPath = Path.Combine(directory, "Referencing.csproj");
+        var unrelatedPath = Path.Combine(directory, "Unrelated.csproj");
+
+        await File.WriteAllTextAsync(packagesPath, directoryPackages);
+        await File.WriteAllTextAsync(referencingPath, referencing);
+        await File.WriteAllTextAsync(unrelatedPath, unrelated);
+
+        var update = await Updater.Update(cache, packagesPath, null);
+
+        var migration = update.Changes.Single();
+        await Assert.That(migration.Kind).IsEqualTo(PackageChangeKind.Migration);
+        await Assert.That(migration.File).IsEqualTo(packagesPath);
+        await Assert.That(migration.Package).IsEqualTo("WindowsAzure.Storage");
+        await Assert.That(migration.From).IsEqualTo(NuGetVersion.Parse("9.3.3"));
+        await Assert.That(migration.Alternative is "Azure.Storage.Common" or "Azure.Storage.Blobs").IsTrue();
+        await Assert.That(migration.To > new NuGetVersion(0, 0, 0)).IsTrue();
+        await Assert.That(migration.Projects.Single()).IsEqualTo(referencingPath);
+        await Assert.That(update.Problems).IsEmpty();
     }
 
     [Test]
