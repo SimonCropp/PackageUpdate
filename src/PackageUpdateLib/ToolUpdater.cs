@@ -1,10 +1,30 @@
 public static class ToolUpdater
 {
-    public static async Task Update(
+    /// <summary>
+    /// Updates the tool versions in a dotnet-tools.json.
+    /// </summary>
+    /// <param name="packageStarted">Told each tool, its position from 1, and how many there are, as checking it starts.</param>
+    /// <param name="logger">Told what is updated, skipped, or fails. Nothing is logged when null.</param>
+    /// <returns>What was changed, and what was skipped.</returns>
+    public static async Task<UpdateResult> Update(
         SourceCacheContext cache,
         string manifestPath,
         string? packageName,
-        Action<string, int, int>? packageStarted = null)
+        Action<string, int, int>? packageStarted = null,
+        ILogger? logger = null)
+    {
+        var result = new UpdateResult();
+        await Update(cache, manifestPath, packageName, packageStarted, logger ?? NullLogger.Instance, result);
+        return result;
+    }
+
+    internal static async Task Update(
+        SourceCacheContext cache,
+        string manifestPath,
+        string? packageName,
+        Action<string, int, int>? packageStarted,
+        ILogger logger,
+        UpdateResult result)
     {
         var bytes = await File.ReadAllBytesAsync(manifestPath);
 
@@ -15,10 +35,15 @@ public static class ToolUpdater
         }
         catch (JsonException exception)
         {
-            Log.Warning(
+            logger.LogWarning(
                 "Failed to parse tool manifest {FilePath}. Error: {Message}",
                 manifestPath,
                 exception.Message);
+            result.Add(
+                new UpdateProblem(
+                    UpdateProblemKind.ManifestUnreadable,
+                    manifestPath,
+                    $"Failed to parse tool manifest. Error: {exception.Message}"));
             return;
         }
 
@@ -44,6 +69,9 @@ public static class ToolUpdater
 
         var updates = new List<(ToolEntry Tool, NuGetVersion Version)>();
 
+        // Added to the result once the file is written
+        var changes = new List<PackageChange>();
+
         var toolNumber = 0;
         foreach (var tool in candidates)
         {
@@ -59,7 +87,8 @@ public static class ToolUpdater
                 tool.Package,
                 currentVersion,
                 sources,
-                cache);
+                cache,
+                logger);
 
             if (latestMetadata == null)
             {
@@ -74,7 +103,8 @@ public static class ToolUpdater
             }
 
             updates.Add((tool, latestVersion));
-            Log.Information("Updated tool {Package}: {NuGetVersion} -> {LatestVersion}", tool.Package, currentVersion, latestVersion);
+            logger.LogInformation("Updated tool {Package}: {NuGetVersion} -> {LatestVersion}", tool.Package, currentVersion, latestVersion);
+            changes.Add(new(PackageChangeKind.Tool, manifestPath, tool.Package, currentVersion, latestVersion));
         }
 
         if (updates.Count == 0)
@@ -83,5 +113,9 @@ public static class ToolUpdater
         }
 
         await File.WriteAllBytesAsync(manifestPath, ToolManifest.ApplyUpdates(bytes, updates));
+        foreach (var change in changes)
+        {
+            result.Add(change);
+        }
     }
 }

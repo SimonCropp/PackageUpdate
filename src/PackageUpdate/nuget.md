@@ -22,6 +22,8 @@ packageupdate C:\Code\TargetDirectory
 
 If no directory is passed the current directory will be used.
 
+The exit code is 1 if any solution or tool manifest failed, such as a solution without a `Directory.Packages.props` or a build that failed, otherwise 0.
+
 
 ### Arguments
 

@@ -98,6 +98,7 @@ packageupdate --build
 4. **Package Update** (`Updater.Update`): Updates package versions in `Directory.Packages.props`
 5. **Optional Build** (`DotnetStarter.Build`): Builds solution after update if `--build` flag is provided
 6. **Tool Manifest Update** (`ToolUpdater.Update`): Scans the target directory for `dotnet-tools.json` manifests and updates tool versions. This scan is independent of the solution scan, since `.config/dotnet-tools.json` usually sits at the repo root while the solution sits in a sub directory
+7. **Exit Code** (Program.cs): 1 when the returned `UpdateResult.Succeeded` is false, otherwise 0
 
 ### Key Components
 
@@ -113,7 +114,13 @@ packageupdate --build
 - **ToolUpdater.cs**: Updates tool versions in a `dotnet-tools.json` manifest
   - Reuses `Updater.GetLatestVersion`, so tools follow the same stable/pre-release rules as packages
   - Respects `"pinned": true` on a tool entry, and the `--package` filter
-  - Malformed manifests are logged as a warning, not thrown
+  - Malformed manifests are logged as a warning and reported as a `ManifestUnreadable` problem, not thrown
+
+- **UpdateResult.cs**, **PackageChange.cs**, **UpdateProblem.cs**: What `PackageUpdater.Run`, `Updater.Update` and `ToolUpdater.Update` return, so a caller such as Lode does not have to read the log to know the outcome
+  - `Changes`: each version written, as a `Version`, `VersionOverride`, `Tool` or `Migration`. A migration is one change, with its `Alternative` and the csproj `Projects` whose references were renamed
+  - `Problems`: each thing skipped or failed at. `IsFailure` (and so `Succeeded`) matches what is logged as an error: `Failed` (an exception, caught per solution or manifest) and `NotCentralPackages`. The rest are logged as warnings
+  - A change is added only once its file is saved, so a file that throws part way leaves out what was not written. Keep each log call that reports a change or problem paired with adding it to the result
+  - NuGet.Protocol's own logging (`NuGetLogger`) goes only to the logger, never into the result
 
 - **ToolManifest.cs**: Parses a `dotnet-tools.json` manifest with `Utf8JsonReader`, capturing the byte range of each version value. Updates are spliced into the original bytes from the end of the file, so formatting is preserved exactly rather than being re-serialized
 
@@ -253,9 +260,13 @@ src/
 ├── PackageUpdate/          # Tool project (dotnet global tool): thin CLI over PackageUpdateLib
 │   ├── Program.cs          # Entry point, calls PackageUpdater.Run
 │   ├── CommandRunner.cs    # CLI parsing
-│   └── Logging.cs          # Serilog console/file setup
-├── PackageUpdateLib/       # Library package with all update logic
+│   └── Logging.cs          # Serilog console/file setup, bridged to an ILogger for the lib
+├── PackageUpdateLib/       # Library package with all update logic. Logs only via a passed in
+│   │                       # Microsoft.Extensions.Logging ILogger (no Serilog reference)
 │   ├── PackageUpdater.cs   # Public orchestration entry point (Run)
+│   ├── UpdateResult.cs     # What Run returns: the changes written and the problems met
+│   ├── UpdateProgress.cs   # What Run reports as it goes
+│   ├── NuGetLogger.cs      # Forwards NuGet.Protocol logging to that ILogger
 │   ├── Updater.cs          # Core update logic
 │   ├── ToolUpdater.cs      # dotnet-tools.json update logic
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
