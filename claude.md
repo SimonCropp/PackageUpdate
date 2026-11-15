@@ -245,6 +245,7 @@ Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common
 - Queries all configured NuGet sources and selects highest version
 - Skips unlisted packages
 - Respects the `minPublishAgeHours` attribute on a `packageSources` entry in nuget.config (set via `dotnet nuget add/update source --min-publish-age-hours`): versions published more recently than that are skipped for that source. `PackageSourceReader` reads the attribute from the config files directly, since `SourceItem` drops unknown attributes
+- Lookups are cached in `LookupCache` for the life of the `SourceCacheContext`, so each `PackageUpdater.Run` (which makes its own) sees newly published versions, and a long lived caller such as Lode does not get stale results. Within that, they are kept apart per set of sources (each source's url and `minPublishAgeHours`), since solutions under one directory can each have their own nuget.config. Never cache lookups in a static keyed only by package and version
 
 ### File Format Preservation
 
@@ -268,6 +269,7 @@ src/
 │   ├── UpdateProgress.cs   # What Run reports as it goes
 │   ├── NuGetLogger.cs      # Forwards NuGet.Protocol logging to that ILogger
 │   ├── Updater.cs          # Core update logic
+│   ├── LookupCache.cs      # Version lookups, cached per SourceCacheContext and set of sources
 │   ├── ToolUpdater.cs      # dotnet-tools.json update logic
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
 │   ├── FileSystem.cs       # Solution and tool manifest discovery

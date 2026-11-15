@@ -1,8 +1,5 @@
 ﻿public static class Updater
 {
-    static ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> metadataCache = new(PackageCacheKeyComparer.Instance);
-    static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestVersionCache = new(PackageCacheKeyComparer.Instance);
-
     /// <summary>
     /// Updates the versions in a Directory.Packages.props, migrating deprecated packages, then the
     /// VersionOverrides in the csproj files under it.
@@ -176,6 +173,10 @@
         await UpdateVersionOverrides(directory, packageName, sources, cache, logger, result);
     }
 
+    /// <summary>
+    /// The latest version to move to from the current version, or null when there is none.
+    /// The result is reused for the life of the cache, for the same sources.
+    /// </summary>
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
         string package,
         NuGetVersion currentVersion,
@@ -184,6 +185,7 @@
         ILogger? logger = null)
     {
         logger ??= NullLogger.Instance;
+        var latestVersionCache = LookupCache.For(cache, sources).Latest;
         var key = (package, currentVersion);
         if (latestVersionCache.TryGetValue(key, out var cached))
         {
@@ -256,6 +258,7 @@
         SourceCacheContext cache,
         ILogger logger)
     {
+        var metadataCache = LookupCache.For(cache, sources).Metadata;
         var key = (package, version);
         if (metadataCache.TryGetValue(key, out var cached))
         {
