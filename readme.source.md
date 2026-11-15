@@ -104,6 +104,7 @@ packageupdate --build
  * In the `*.csproj` files under the solution, rename the `PackageReference` of any migrated package, and move every `VersionOverride` forward.
  * Recursively scan the target directory for `dotnet-tools.json` manifests, and move every tool that is not pinned forward.
  * Optionally build each solution after it has been updated.
+ * A solution or tool manifest that fails does not stop the rest. The exit code is 1 if any failed, otherwise 0. A failure is anything logged as an error, such as a solution without a `Directory.Packages.props`, a `Directory.Packages.props` or csproj that is not valid XML, a source that could not be reached, or a build that failed. A `dotnet-tools.json` that is not valid JSON is only a warning.
 
 
 ## PackageUpdateIgnores

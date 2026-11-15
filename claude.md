@@ -98,6 +98,7 @@ packageupdate --build
 4. **Package Update** (`Updater.Update`): Updates package versions in `Directory.Packages.props`
 5. **Optional Build** (`DotnetStarter.Build`): Builds solution after update if `--build` flag is provided
 6. **Tool Manifest Update** (`ToolUpdater.Update`): Scans the target directory for `dotnet-tools.json` manifests and updates tool versions. This scan is independent of the solution scan, since `.config/dotnet-tools.json` usually sits at the repo root while the solution sits in a sub directory
+7. **Exit Code** (Program.cs): 1 when the returned `UpdateResult.Succeeded` is false, otherwise 0
 
 ### Key Components
 
