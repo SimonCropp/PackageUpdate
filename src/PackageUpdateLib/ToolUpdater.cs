@@ -65,7 +65,7 @@ public static class ToolUpdater
         }
 
         var directory = Path.GetDirectoryName(manifestPath)!;
-        var sources = PackageSourceReader.Read(directory);
+        var sources = PackageSourceReader.ReadConfigured(directory);
 
         var updates = new List<(ToolEntry Tool, NuGetVersion Version)>();
 
@@ -86,7 +86,7 @@ public static class ToolUpdater
             var latestMetadata = await Updater.GetLatestVersion(
                 tool.Package,
                 currentVersion,
-                sources,
+                sources.For(tool.Package),
                 cache,
                 logger);
 

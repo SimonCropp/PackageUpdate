@@ -68,7 +68,7 @@
             }
         }
 
-        var sources = PackageSourceReader.Read(directory);
+        var sources = PackageSourceReader.ReadConfigured(directory);
 
         // Added to the result once the file is saved
         var changes = new List<PackageChange>();
@@ -93,7 +93,7 @@
             var currentMetadata = await GetPackageMetadata(
                 package.Package!,
                 currentVersion,
-                sources,
+                sources.For(package.Package!),
                 cache,
                 logger);
 
@@ -135,7 +135,7 @@
             var latestMetadata = await GetLatestVersion(
                 package.Package!,
                 currentVersion,
-                sources,
+                sources.For(package.Package!),
                 cache,
                 logger);
 
@@ -199,7 +199,6 @@
             var (repository, metadataResource) = await RepositoryReader.Read(source);
 
             var condidates = await GetCondidates(package, currentVersion, cache, repository, logger);
-            var minPublishAge = PackageSourceReader.GetMinPublishAge(source);
 
             foreach (var candidate in condidates)
             {
@@ -216,13 +215,15 @@
                 }
 
                 // Skip versions newer than the source's minPublishAgeHours cooldown
-                if (!IsOldEnough(metadata, minPublishAge))
+                var cooldownSkip = CooldownSkipReason(metadata.Published, source.MinPublishAge, DateTimeOffset.UtcNow);
+                if (cooldownSkip != null)
                 {
                     logger.LogInformation(
-                        "Skipped {Package} {Version} from {Source}: published within minPublishAgeHours",
+                        "Skipped {Package} {Version} from {Source}: {Reason}",
                         package,
                         candidate,
-                        source.Name);
+                        source.Name,
+                        cooldownSkip);
                     continue;
                 }
 
@@ -241,14 +242,27 @@
         return latestMetadata;
     }
 
-    static bool IsOldEnough(IPackageSearchMetadata metadata, TimeSpan? minPublishAge)
+    // Why a version cannot be selected under the source's minimum publish age, or null when it can.
+    // NuGet errors on a version with no publish date rather than assume it is old enough. It is
+    // skipped here instead, so one version without a date does not fail the whole file.
+    internal static string? CooldownSkipReason(DateTimeOffset? published, TimeSpan minPublishAge, DateTimeOffset now)
     {
-        if (minPublishAge == null || metadata.Published == null)
+        if (minPublishAge <= TimeSpan.Zero)
         {
-            return true;
+            return null;
         }
 
-        return DateTimeOffset.UtcNow - metadata.Published.Value >= minPublishAge.Value;
+        if (published == null)
+        {
+            return "no publish date to check against minPublishAgeHours";
+        }
+
+        if (now - published.Value < minPublishAge)
+        {
+            return "published within minPublishAgeHours";
+        }
+
+        return null;
     }
 
     static async Task<IPackageSearchMetadata?> GetPackageMetadata(
@@ -291,7 +305,7 @@
         XElement packageElement,
         string currentPackage,
         PackageDeprecationMetadata deprecation,
-        List<PackageSource> sources,
+        ConfiguredSources sources,
         SourceCacheContext cache,
         XDocument xml,
         string directoryPackagesPropsPath,
@@ -349,7 +363,7 @@
             alternateId,
             // Start from 0.0.0 to get any version
             new(0, 0, 0),
-            sources,
+            sources.For(alternateId),
             cache,
             logger);
 
@@ -435,7 +449,7 @@
     static async Task UpdateVersionOverrides(
         string directory,
         string? packageName,
-        List<PackageSource> sources,
+        ConfiguredSources sources,
         SourceCacheContext cache,
         ILogger logger,
         UpdateResult result)
@@ -479,7 +493,7 @@
                 var latestMetadata = await GetLatestVersion(
                     packageOverride.Package!,
                     currentVersion,
-                    sources,
+                    sources.For(packageOverride.Package!),
                     cache,
                     logger);
 

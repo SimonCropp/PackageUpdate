@@ -154,9 +154,13 @@ To use authenticated feed, add the [packageSourceCredentials](https://docs.micro
 
 ## Minimum package publication age
 
-Sources can define a cooldown via the `minPublishAgeHours` attribute in `nuget.config`. Versions published more recently than that are not selected from that source.
+Sources can define a cooldown via the `minPublishAgeHours` attribute in `nuget.config`. Versions published more recently than that are not selected from that source. If no newer version is old enough, the package stays at its current version.
 
-This mirrors the NuGet [minimum package publication age](https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/nuget.md#configure-minimum-package-publication-age-from-the-cli) feature.
+This follows the NuGet [minimum package publish age](https://learn.microsoft.com/nuget/consume-packages/minimum-package-publish-age) feature (NuGet 8.0, .NET SDK 11.0.100), and the settings are read with NuGet's own configuration API:
+
+ * The value must be a whole number of hours. Any other value fails the solution, the same as restore.
+ * Each source is judged on its own: a version old enough on any one source can be selected.
+ * A version with no publish date is not selected from a source with a cooldown, since its age cannot be checked. NuGet reports an error in this case. PackageUpdate skips that version and logs why.
 
 ```xml
 <packageSources>
@@ -168,6 +172,14 @@ This can be set via the CLI (.NET 11 SDK):
 
 ```
 dotnet nuget update source nuget.org --min-publish-age-hours 24
+```
+
+Packages can be exempted from the cooldown, on every source, with `minPublishAgeExceptions`. Patterns use the [Package Source Mapping pattern syntax](https://learn.microsoft.com/nuget/consume-packages/package-source-mapping#package-pattern-syntax) and are case-insensitive. The closest `nuget.config` that has the section replaces any inherited list, so an empty section removes inherited exceptions.
+
+```xml
+<minPublishAgeExceptions>
+  <package pattern="Contoso.*" />
+</minPublishAgeExceptions>
 ```
 
 

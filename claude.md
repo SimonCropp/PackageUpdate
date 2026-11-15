@@ -244,8 +244,11 @@ Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common
 - Respects pre-release semantics (stable → stable, pre-release → any)
 - Queries all configured NuGet sources and selects highest version
 - Skips unlisted packages
-- Respects the `minPublishAgeHours` attribute on a `packageSources` entry in nuget.config (set via `dotnet nuget add/update source --min-publish-age-hours`): versions published more recently than that are skipped for that source. `PackageSourceReader` reads the attribute from the config files directly, since `SourceItem` drops unknown attributes
-- Lookups are cached in `LookupCache` for the life of the `SourceCacheContext`, so each `PackageUpdater.Run` (which makes its own) sees newly published versions, and a long lived caller such as Lode does not get stale results. Within that, they are kept apart per set of sources (each source's url and `minPublishAgeHours`), since solutions under one directory can each have their own nuget.config. Never cache lookups in a static keyed only by package and version
+- Respects the NuGet 8.0 [minimum package publish age](https://learn.microsoft.com/nuget/consume-packages/minimum-package-publish-age): the `minPublishAgeHours` attribute on a `packageSources` entry in nuget.config (set via `dotnet nuget add/update source --min-publish-age-hours`). Versions published more recently than that are skipped for that source
+  - NuGet.Configuration reads the attribute onto `PackageSource.MinPublishAge` (zero when not set). A value that is not whole hours throws `NuGetConfigurationException` when settings load, which fails the solution or tool manifest as restore would. Do not parse the attribute by hand
+  - `minPublishAgeExceptions` (read via `MinPublishAgeExceptions.GetMinPublishAgeExceptions`) exempts matching packages on every source. `PackageSourceReader.ReadConfigured` returns a `ConfiguredSources`, whose `For(package)` gives the sources to look a package up in: clones with no minimum age when the package is exempt. Internal callers look packages up via `For`, not the raw list
+  - Under a nonzero minimum age, a version with no publish date is skipped (NuGet errors instead). See `Updater.CooldownSkipReason`
+- Lookups are cached in `LookupCache` for the life of the `SourceCacheContext`, so each `PackageUpdater.Run` (which makes its own) sees newly published versions, and a long lived caller such as Lode does not get stale results. Within that, they are kept apart per set of sources (each source's url and `MinPublishAge`), since solutions under one directory can each have their own nuget.config. Never cache lookups in a static keyed only by package and version
 
 ### File Format Preservation
 
@@ -274,6 +277,7 @@ src/
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
 │   ├── FileSystem.cs       # Solution and tool manifest discovery
 │   ├── PackageSourceReader.cs  # NuGet source config
+│   ├── ConfiguredSources.cs    # A directory's sources, and which packages skip their minimum age
 │   └── ...
 ├── Tests/                  # Unit tests
 ├── Directory.Packages.props    # CPM configuration for this repo
