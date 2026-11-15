@@ -1,9 +1,9 @@
 public static class PackageUpdater
 {
-    public static Task Run(string directory, string? package, bool build) =>
+    public static Task<UpdateResult> Run(string directory, string? package, bool build) =>
         Run(directory, package, build, null, null);
 
-    public static Task Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress) =>
+    public static Task<UpdateResult> Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress) =>
         Run(directory, package, build, progress, null);
 
     /// <summary>
@@ -11,7 +11,11 @@ public static class PackageUpdater
     /// dotnet-tools.json under it, reporting each file and each package as it starts on it.
     /// </summary>
     /// <param name="logger">Told what is updated, skipped, or fails. Nothing is logged when null.</param>
-    public static async Task Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress, ILogger? logger)
+    /// <returns>
+    /// What was changed, and what was skipped or failed. A solution or tool manifest that throws is
+    /// in <see cref="UpdateResult.Problems"/> rather than thrown, and the rest are still worked on.
+    /// </returns>
+    public static async Task<UpdateResult> Run(string directory, string? package, bool build, IProgress<UpdateProgress>? progress, ILogger? logger)
     {
         logger ??= NullLogger.Instance;
         logger.LogInformation("TargetDirectory: {TargetDirectory}", directory);
@@ -32,6 +36,7 @@ public static class PackageUpdater
         };
         // Multiple solutions can resolve to the same props file, so only update it once
         var updatedProps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new UpdateResult();
 
         // Found up front, so progress can say how many there are.
         var solutions = WithoutForks(directory, FileSystem.FindSolutions(directory), logger);
@@ -46,14 +51,14 @@ public static class PackageUpdater
         {
             fileNumber++;
             var packageStarted = ReportStart(progress, solution, fileNumber, fileCount);
-            await TryProcessSolution(cache, solution, package, build, directory, updatedProps, packageStarted, logger);
+            await TryProcessSolution(cache, solution, package, build, directory, updatedProps, packageStarted, logger, result);
         }
 
         foreach (var manifest in manifests)
         {
             fileNumber++;
             var packageStarted = ReportStart(progress, manifest, fileNumber, fileCount);
-            await TryProcessToolManifest(cache, manifest, package, packageStarted, logger);
+            await TryProcessToolManifest(cache, manifest, package, packageStarted, logger, result);
         }
 
         if (build)
@@ -62,6 +67,7 @@ public static class PackageUpdater
         }
 
         logger.LogInformation("Completed in {Elapsed}", Formatter.FormatElapsed(totalStopwatch.Elapsed));
+        return result;
     }
 
     static List<string> WithoutForks(string directory, IEnumerable<string> files, ILogger logger)
@@ -94,11 +100,11 @@ public static class PackageUpdater
             progress.Report(new(file, fileNumber, fileCount, package, packageNumber, packageCount));
     }
 
-    static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted, ILogger logger)
+    static async Task TryProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted, ILogger logger, UpdateResult result)
     {
         try
         {
-            await ProcessSolution(cache, solution, package, build, targetDirectory, updatedProps, packageStarted, logger);
+            await ProcessSolution(cache, solution, package, build, targetDirectory, updatedProps, packageStarted, logger, result);
         }
         catch (Exception e)
         {
@@ -109,14 +115,19 @@ public static class PackageUpdater
                 """,
                 solution,
                 e.Message);
+            result.Add(
+                new UpdateProblem(UpdateProblemKind.Failed, solution, $"Failed to process solution. Error: {e.Message}")
+                {
+                    Exception = e
+                });
         }
     }
 
-    static async Task TryProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted, ILogger logger)
+    static async Task TryProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted, ILogger logger, UpdateResult result)
     {
         try
         {
-            await ProcessToolManifest(cache, manifest, package, packageStarted, logger);
+            await ProcessToolManifest(cache, manifest, package, packageStarted, logger, result);
         }
         catch (Exception e)
         {
@@ -127,10 +138,15 @@ public static class PackageUpdater
                 """,
                 manifest,
                 e.Message);
+            result.Add(
+                new UpdateProblem(UpdateProblemKind.Failed, manifest, $"Failed to process tool manifest. Error: {e.Message}")
+                {
+                    Exception = e
+                });
         }
     }
 
-    static async Task ProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted, ILogger logger)
+    static async Task ProcessToolManifest(SourceCacheContext cache, string manifest, string? package, Action<string, int, int>? packageStarted, ILogger logger, UpdateResult result)
     {
         if (Excluder.ShouldExclude(manifest))
         {
@@ -141,11 +157,11 @@ public static class PackageUpdater
         logger.LogInformation("  {Manifest}", manifest);
 
         var stopwatch = Stopwatch.StartNew();
-        await ToolUpdater.Update(cache, manifest, package, packageStarted, logger);
+        await ToolUpdater.Update(cache, manifest, package, packageStarted, logger, result);
         logger.LogInformation("    Updated in {Elapsed}", Formatter.FormatElapsed(stopwatch.Elapsed));
     }
 
-    static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted, ILogger logger)
+    static async Task ProcessSolution(SourceCacheContext cache, string solution, string? package, bool build, string targetDirectory, HashSet<string> updatedProps, Action<string, int, int>? packageStarted, ILogger logger, UpdateResult result)
     {
         if (Excluder.ShouldExclude(solution))
         {
@@ -161,13 +177,14 @@ public static class PackageUpdater
         if (propsLocation is null)
         {
             logger.LogError("    Only central packages supported. Skipping: {Solution}", solution);
+            result.Add(new UpdateProblem(UpdateProblemKind.NotCentralPackages, solution, "Only central packages supported. Skipped"));
             return;
         }
 
         if (updatedProps.Add(propsLocation))
         {
             var stopwatch = Stopwatch.StartNew();
-            await Updater.Update(cache, propsLocation, package, packageStarted, logger);
+            await Updater.Update(cache, propsLocation, package, packageStarted, logger, result);
             logger.LogInformation("    Updated {Props} in {Elapsed}", propsLocation, Formatter.FormatElapsed(stopwatch.Elapsed));
         }
         else

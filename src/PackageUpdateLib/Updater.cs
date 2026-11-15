@@ -3,15 +3,34 @@
     static ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> metadataCache = new(PackageCacheKeyComparer.Instance);
     static ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> latestVersionCache = new(PackageCacheKeyComparer.Instance);
 
+    /// <summary>
+    /// Updates the versions in a Directory.Packages.props, migrating deprecated packages, then the
+    /// VersionOverrides in the csproj files under it.
+    /// </summary>
     /// <param name="packageStarted">Told each package, its position from 1, and how many there are, as checking it starts.</param>
-    public static async Task Update(
+    /// <param name="logger">Told what is updated, skipped, or fails. Nothing is logged when null.</param>
+    /// <returns>What was changed, and what was skipped.</returns>
+    public static async Task<UpdateResult> Update(
         SourceCacheContext cache,
         string directoryPackagesPropsPath,
         string? packageName,
         Action<string, int, int>? packageStarted = null,
         ILogger? logger = null)
     {
-        logger ??= NullLogger.Instance;
+        var result = new UpdateResult();
+        await Update(cache, directoryPackagesPropsPath, packageName, packageStarted, logger ?? NullLogger.Instance, result);
+        return result;
+    }
+
+    // Adds to the result as each file is saved, so a later file throwing still leaves what was written.
+    internal static async Task Update(
+        SourceCacheContext cache,
+        string directoryPackagesPropsPath,
+        string? packageName,
+        Action<string, int, int>? packageStarted,
+        ILogger logger,
+        UpdateResult result)
+    {
         var directory = Path.GetDirectoryName(directoryPackagesPropsPath)!;
 
         // Load the XML document. The editor splices updates into the original text so
@@ -43,14 +62,23 @@
             if (packageVersions.Count == 0)
             {
                 logger.LogWarning("Package {Package} not found in {FilePath}", packageName, directoryPackagesPropsPath);
+                result.Add(
+                    new UpdateProblem(UpdateProblemKind.PackageNotFound, directoryPackagesPropsPath, $"Package {packageName} not found")
+                    {
+                        Package = packageName
+                    });
                 return;
             }
         }
 
         var sources = PackageSourceReader.Read(directory);
 
-        // Track migrations for csproj updates
-        var migrations = new List<(string OldPackage, string NewPackage)>();
+        // Added to the result once the file is saved
+        var changes = new List<PackageChange>();
+
+        // Track migrations for csproj updates. Projects is the list in the migration's change, so each
+        // csproj is added to it as it is saved.
+        var migrations = new List<(string OldPackage, string NewPackage, List<string> Projects)>();
 
         // Update each package
         var packageNumber = 0;
@@ -85,11 +113,21 @@
                         sources,
                         cache,
                         xml,
-                        logger);
+                        directoryPackagesPropsPath,
+                        logger,
+                        result);
 
                     if (migration != null)
                     {
-                        migrations.Add(migration.Value);
+                        var (alternative, alternativeVersion) = migration.Value;
+                        var projects = new List<string>();
+                        changes.Add(
+                            new(PackageChangeKind.Migration, directoryPackagesPropsPath, package.Package!, currentVersion, alternativeVersion)
+                            {
+                                Alternative = alternative,
+                                Projects = projects
+                            });
+                        migrations.Add((package.Package!, alternative, projects));
                         // Migration successful, skip normal version update
                         continue;
                     }
@@ -119,9 +157,14 @@
             // Update the Version attribute
             editor.SetAttribute(package.Element, "Version", latestVersion.ToString());
             logger.LogInformation("Updated {Package}: {NuGetVersion} -> {LatestVersion}", package.Package, currentVersion, latestVersion);
+            changes.Add(new(PackageChangeKind.Version, directoryPackagesPropsPath, package.Package!, currentVersion, latestVersion));
         }
 
         await editor.Save(directoryPackagesPropsPath);
+        foreach (var change in changes)
+        {
+            result.Add(change);
+        }
 
         // Update PackageReference entries in csproj files for migrated packages
         if (migrations.Count > 0)
@@ -130,7 +173,7 @@
         }
 
         // Update VersionOverride entries in csproj files (e.g. test projects tracking a pre-release)
-        await UpdateVersionOverrides(directory, packageName, sources, cache, logger);
+        await UpdateVersionOverrides(directory, packageName, sources, cache, logger, result);
     }
 
     public static async Task<IPackageSearchMetadata?> GetLatestVersion(
@@ -240,7 +283,7 @@
         return null;
     }
 
-    static async Task<(string OldPackage, string NewPackage)?> TryMigratePackage(
+    static async Task<(string Alternative, NuGetVersion Version)?> TryMigratePackage(
         XmlEditor editor,
         XElement packageElement,
         string currentPackage,
@@ -248,8 +291,12 @@
         List<PackageSource> sources,
         SourceCacheContext cache,
         XDocument xml,
-        ILogger logger)
+        string directoryPackagesPropsPath,
+        ILogger logger,
+        UpdateResult result)
     {
+        var reasons = string.Join(", ", deprecation.Reasons);
+
         // Check if alternate package exists
         var alternateId = deprecation.AlternatePackage?.PackageId;
         if (alternateId == null)
@@ -257,7 +304,15 @@
             logger.LogWarning(
                 "Package {Package} is deprecated but has no alternative. Reasons: {Reasons}",
                 currentPackage,
-                string.Join(", ", deprecation.Reasons));
+                reasons);
+            result.Add(
+                new UpdateProblem(
+                    UpdateProblemKind.DeprecatedWithoutAlternative,
+                    directoryPackagesPropsPath,
+                    $"Package {currentPackage} is deprecated but has no alternative. Reasons: {reasons}")
+                {
+                    Package = currentPackage
+                });
             return null;
         }
 
@@ -275,6 +330,14 @@
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative already exists",
                 currentPackage,
                 alternateId);
+            result.Add(
+                new UpdateProblem(
+                    UpdateProblemKind.AlternativeAlreadyPresent,
+                    directoryPackagesPropsPath,
+                    $"Package {currentPackage} is deprecated with alternative {alternateId}, but alternative already exists")
+                {
+                    Package = currentPackage
+                });
             return null;
         }
 
@@ -293,6 +356,14 @@
                 "Package {Package} is deprecated with alternative {Alternative}, but alternative not found in sources",
                 currentPackage,
                 alternateId);
+            result.Add(
+                new UpdateProblem(
+                    UpdateProblemKind.AlternativeNotFound,
+                    directoryPackagesPropsPath,
+                    $"Package {currentPackage} is deprecated with alternative {alternateId}, but alternative not found in sources")
+                {
+                    Package = currentPackage
+                });
             return null;
         }
 
@@ -308,12 +379,12 @@
             currentPackage,
             alternateId,
             targetVersion,
-            string.Join(", ", deprecation.Reasons));
+            reasons);
 
-        return (currentPackage, alternateId);
+        return (alternateId, targetVersion);
     }
 
-    static async Task UpdateCsprojFiles(string directory, List<(string OldPackage, string NewPackage)> migrations, ILogger logger)
+    static async Task UpdateCsprojFiles(string directory, List<(string OldPackage, string NewPackage, List<string> Projects)> migrations, ILogger logger)
     {
         // Find all csproj files recursively
         var csprojFiles = EnumerateCsprojFiles(directory);
@@ -322,7 +393,10 @@
         {
             var editor = XmlEditor.Load(csprojPath);
 
-            foreach (var (oldPackage, newPackage) in migrations)
+            // The Projects of each migration that renamed a reference in this csproj
+            var renamedIn = new List<List<string>>();
+
+            foreach (var (oldPackage, newPackage, projects) in migrations)
             {
                 var packageReferences = editor.Document.Descendants("PackageReference")
                     .Where(_ => string.Equals(
@@ -340,9 +414,18 @@
                         newPackage,
                         Path.GetFileName(csprojPath));
                 }
+
+                if (packageReferences.Count > 0)
+                {
+                    renamedIn.Add(projects);
+                }
             }
 
             await editor.Save(csprojPath);
+            foreach (var projects in renamedIn)
+            {
+                projects.Add(csprojPath);
+            }
         }
     }
 
@@ -351,11 +434,15 @@
         string? packageName,
         List<PackageSource> sources,
         SourceCacheContext cache,
-        ILogger logger)
+        ILogger logger,
+        UpdateResult result)
     {
         foreach (var csprojPath in EnumerateCsprojFiles(directory))
         {
             var editor = XmlEditor.Load(csprojPath);
+
+            // Added to the result once the file is saved
+            var changes = new List<PackageChange>();
 
             var overrides = editor.Document.Descendants("PackageReference")
                 .Select(element => new
@@ -412,9 +499,14 @@
                     currentVersion,
                     latestVersion,
                     Path.GetFileName(csprojPath));
+                changes.Add(new(PackageChangeKind.VersionOverride, csprojPath, packageOverride.Package!, currentVersion, latestVersion));
             }
 
             await editor.Save(csprojPath);
+            foreach (var change in changes)
+            {
+                result.Add(change);
+            }
         }
     }
 
