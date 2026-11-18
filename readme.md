@@ -17,7 +17,7 @@ A [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools)
 
 ## Requirements/Caveats
 
- * .net SDK 10 is required. https://dotnet.microsoft.com/en-us/download
+ * .net SDK 11 is required. https://dotnet.microsoft.com/en-us/download
  * Only solutions using [Central Package Management (CPM)](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management) are supported.
 
 
