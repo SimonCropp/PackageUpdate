@@ -53,6 +53,11 @@
         return null;
     }
 
+    // Whether the target is the git root or inside it, so the repo was targeted directly
+    // rather than found by scanning a directory above it
+    public static bool IsTargeted(string targetDirectory, string gitRoot) =>
+        IsInside(Normalize(targetDirectory), gitRoot);
+
     static string Normalize(string directory) =>
         Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
 
@@ -91,11 +96,27 @@
 
             foreach (var subdirectory in GetDirectories(current))
             {
+                if (IsSkipped(subdirectory))
+                {
+                    continue;
+                }
+
                 stack.Push(subdirectory);
             }
         }
 
         return allFiles;
+    }
+
+    // npm packages can ship their own native build solutions (eg node-gyp's binding.sln),
+    // which are never the user's to update. A .git directory never holds a solution, so
+    // walking its objects is wasted time. Only subdirectories are skipped, so a directory
+    // that is itself the target is still scanned
+    static bool IsSkipped(string directory)
+    {
+        var name = Path.GetFileName(directory);
+        return string.Equals(name, "node_modules", pathComparison) ||
+               string.Equals(name, ".git", pathComparison);
     }
 
     static IEnumerable<string> GetFiles(string directory, string pattern)

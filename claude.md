@@ -93,7 +93,7 @@ packageupdate --build
 ### Core Workflow (Program.cs)
 
 1. **Solution Discovery** (`FileSystem.FindSolutions`): Recursively scans target directory for `*.sln` and `*.slnx` files
-2. **Fork Detection** (`ForkDetector.ShouldSkip`): Skips forked repos (those with an "upstream" remote) unless explicitly targeted
+2. **Fork and Worktree Detection** (`ForkDetector.ShouldSkip`, `WorktreeDetector.ShouldSkip`): Skips forked repos (those with an "upstream" remote) and linked git worktrees unless explicitly targeted
 3. **Solution Validation**: Checks for `Directory.Packages.props` (CPM requirement) and applies exclusion rules
 4. **Package Update** (`Updater.Update`): Updates package versions in `Directory.Packages.props`
 5. **Optional Build** (`DotnetStarter.Build`): Builds solution after update if `--build` flag is provided
@@ -128,9 +128,11 @@ packageupdate --build
 
 - **ForkDetector.cs**: Detects forked git repos by checking for an "upstream" remote in `.git/config`. Skips forks found via recursive scanning; allows forks when explicitly targeted
 
+- **WorktreeDetector.cs**: Detects linked git worktrees (a `.git` file whose `gitdir:` points into `.git/worktrees/<name>`, such as Claude Code's `.claude/worktrees`). Skips them when found via scanning, and allows them when explicitly targeted, using the same `FileSystem.IsTargeted` check as `ForkDetector`. Submodules (`.git` file pointing into `.git/modules`) are not skipped
+
 - **Excluder.cs**: Solution filtering via `PackageUpdateIgnores` environment variable (comma-separated list)
 
-- **FileSystem.cs**: Safe recursive directory traversal with UnauthorizedAccessException handling
+- **FileSystem.cs**: Safe recursive directory traversal with UnauthorizedAccessException handling. Skips `node_modules` subdirectories (npm packages can ship native build solutions such as node-gyp's `binding.sln`) and `.git` subdirectories (never hold a solution, so walking them is wasted time), for both solutions and tool manifests. A target directory that is itself one of these is still scanned
 
 - **DotnetStarter.cs**: Process management for `dotnet build` commands with 60-second timeout
 

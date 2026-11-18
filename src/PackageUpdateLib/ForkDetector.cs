@@ -16,13 +16,9 @@
             return false;
         }
 
-        var normalizedTarget = Path.GetFullPath(targetDirectory);
-        var normalizedGitRoot = Path.GetFullPath(gitRoot);
-
         // Skip if target is above the git root (fork was discovered via scanning)
         // Don't skip if target is at or below the git root (fork was explicitly targeted)
-        return !normalizedTarget.Equals(normalizedGitRoot, StringComparison.OrdinalIgnoreCase) &&
-               !normalizedTarget.StartsWith(normalizedGitRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        return !FileSystem.IsTargeted(targetDirectory, gitRoot);
     }
 
     static bool HasUpstreamRemote(string gitRoot)
