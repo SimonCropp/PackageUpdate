@@ -102,8 +102,8 @@ packageupdate --build
 
 ### Behavior
 
- * Recursively scan the target directory for `*.sln` and `*.slnx` files.
- * Skip forked repositories, and any solution excluded via `PackageUpdateIgnores`.
+ * Recursively scan the target directory for `*.sln` and `*.slnx` files. `node_modules` and `.git` directories are not scanned.
+ * Skip forked repositories, git worktrees, and any solution excluded via `PackageUpdateIgnores`.
  * For each remaining solution, parse the `Directory.Packages.props` beside it. Solutions without one are skipped.
  * Read the NuGet sources from the [nuget.config hierarchy](https://learn.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior#how-settings-are-applied).
  * For every `PackageVersion` that is not pinned, query those sources using the [NuGet client SDK](https://learn.microsoft.com/en-us/nuget/reference/nuget-client-sdk). A package whose current version is deprecated is migrated to its alternative. Every other package is moved to the highest listed version, where a stable version never moves to a pre-release.
@@ -136,6 +136,17 @@ packageupdate C:\Code\MyForkedRepo
 ```
 
 This ensures forks are only updated intentionally, preventing unexpected changes to repositories you don't own.
+
+
+## Worktree Skipping
+
+Linked git worktrees (created by `git worktree add`, or by tools such as Claude Code under `.claude/worktrees`) are also skipped when found by scanning a directory above them. A worktree is a second checkout of a repository, usually on a branch with work in progress, so updating it duplicates the update to the main checkout and leaves changes on that branch. A worktree is detected by its `.git` being a file that points into `.git/worktrees`. Submodules, whose `.git` file points into `.git/modules`, are not skipped.
+
+To update a worktree, target its directory directly:
+
+```ps
+packageupdate C:\Code\MyRepo\.claude\worktrees\my-feature
+```
 
 
 ## Add to Windows Explorer

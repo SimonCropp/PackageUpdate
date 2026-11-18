@@ -95,6 +95,50 @@ public class FileSystemTests
     }
 
     [Test]
+    public async Task FindSolutions_SkipsNodeModules()
+    {
+        using var temp = new TempDirectory();
+        var solutionDir = PropsHelper.CreateSolutionDir(temp, Path.Combine("repo", "src"));
+        var solution = Path.Combine(solutionDir, "App.slnx");
+        await File.WriteAllTextAsync(solution, "<Solution />");
+        var nested = PropsHelper.CreateSolutionDir(temp, Path.Combine("repo", "ui", "node_modules", "canvas", "build"));
+        await File.WriteAllTextAsync(Path.Combine(nested, "binding.sln"), "");
+        await File.WriteAllTextAsync(Path.Combine(nested, "binding.slnx"), "<Solution />");
+
+        var result = FileSystem.FindSolutions(temp).ToList();
+
+        await Assert.That(result).IsEquivalentTo([solution]);
+    }
+
+    [Test]
+    public async Task FindSolutions_SkipsGitDirectory()
+    {
+        using var temp = new TempDirectory();
+        var repoDir = PropsHelper.CreateSolutionDir(temp, "repo");
+        var solution = Path.Combine(repoDir, "App.slnx");
+        await File.WriteAllTextAsync(solution, "<Solution />");
+        var gitDir = PropsHelper.CreateSolutionDir(repoDir, Path.Combine(".git", "objects"));
+        await File.WriteAllTextAsync(Path.Combine(gitDir, "Stray.sln"), "");
+
+        var result = FileSystem.FindSolutions(temp).ToList();
+
+        await Assert.That(result).IsEquivalentTo([solution]);
+    }
+
+    [Test]
+    public async Task FindSolutions_TargetIsNodeModules_ScansIt()
+    {
+        using var temp = new TempDirectory();
+        var target = PropsHelper.CreateSolutionDir(temp, "node_modules");
+        var solution = Path.Combine(target, "App.sln");
+        await File.WriteAllTextAsync(solution, "");
+
+        var result = FileSystem.FindSolutions(target).ToList();
+
+        await Assert.That(result).IsEquivalentTo([solution]);
+    }
+
+    [Test]
     public async Task FindPropsFile_StartOutsideTarget_ReturnsNull()
     {
         using var temp = new TempDirectory();
