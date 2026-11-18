@@ -39,11 +39,11 @@ public static class PackageUpdater
         var result = new UpdateResult();
 
         // Found up front, so progress can say how many there are.
-        var solutions = WithoutForks(directory, FileSystem.FindSolutions(directory), logger);
+        var solutions = WithoutForksOrWorktrees(directory, FileSystem.FindSolutions(directory), logger);
 
         // Tool manifests are scanned independently of solutions, since `.config/dotnet-tools.json`
         // usually sits at the repository root while the solution sits in a sub directory
-        var manifests = WithoutForks(directory, FileSystem.FindToolManifests(directory), logger);
+        var manifests = WithoutForksOrWorktrees(directory, FileSystem.FindToolManifests(directory), logger);
 
         var fileCount = solutions.Count + manifests.Count;
         var fileNumber = 0;
@@ -70,7 +70,7 @@ public static class PackageUpdater
         return result;
     }
 
-    static List<string> WithoutForks(string directory, IEnumerable<string> files, ILogger logger)
+    static List<string> WithoutForksOrWorktrees(string directory, IEnumerable<string> files, ILogger logger)
     {
         var kept = new List<string>();
         foreach (var file in files)
@@ -78,6 +78,12 @@ public static class PackageUpdater
             if (ForkDetector.ShouldSkip(directory, file))
             {
                 logger.LogInformation("  Skipping fork: {File}", file);
+                continue;
+            }
+
+            if (WorktreeDetector.ShouldSkip(directory, file))
+            {
+                logger.LogInformation("  Skipping worktree: {File}", file);
                 continue;
             }
 
