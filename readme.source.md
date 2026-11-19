@@ -170,7 +170,7 @@ Sources can define a cooldown via the `minPublishAgeHours` attribute in `nuget.c
 This follows the NuGet [minimum package publish age](https://learn.microsoft.com/nuget/consume-packages/minimum-package-publish-age) feature (NuGet 8.0, .NET SDK 11.0.100), and the settings are read with NuGet's own configuration API:
 
  * The value must be a whole number of hours. Any other value fails the solution, the same as restore.
- * Each source is judged on its own: a version old enough on any one source can be selected.
+ * Each source is judged on its own: a version old enough on any one source can be selected. Use [Package Source Mapping](#package-source-mapping) to stop a source with no cooldown supplying a package that should only come from one with a cooldown.
  * A version with no publish date is not selected from a source with a cooldown, since its age cannot be checked. NuGet reports an error in this case. PackageUpdate skips that version and logs why.
 
 ```xml
@@ -192,6 +192,31 @@ Packages can be exempted from the cooldown, on every source, with `minPublishAge
   <package pattern="Contoso.*" />
 </minPublishAgeExceptions>
 ```
+
+
+## Package Source Mapping
+
+When `nuget.config` has a [`packageSourceMapping`](https://learn.microsoft.com/nuget/consume-packages/package-source-mapping) section, each package and tool is looked up only in the sources it is mapped to, the same as restore. So a version is never taken from a source that restore would not use.
+
+```xml
+<packageSources>
+  <clear />
+  <add key="nuget.org" value="https://api.nuget.org/v3/index.json" minPublishAgeHours="72" />
+  <add key="contoso" value="https://contoso.test/nuget/v3/index.json" />
+</packageSources>
+<packageSourceMapping>
+  <packageSource key="nuget.org">
+    <package pattern="*" />
+  </packageSource>
+  <packageSource key="contoso">
+    <package pattern="Contoso.*" />
+  </packageSource>
+</packageSourceMapping>
+```
+
+Here `Contoso.*` packages come only from `contoso`, with no cooldown. Every other package comes only from nuget.org, so it waits 72 hours even if `contoso` has a newer version.
+
+A package or tool that is mapped to no source is not updated, and is reported as a warning, since restore cannot find it either.
 
 
 ## Package Version Pinning

@@ -83,6 +83,11 @@ public static class ToolUpdater
                 continue;
             }
 
+            if (Updater.ReportIfUnmapped(sources, tool.Package, manifestPath, logger, result))
+            {
+                continue;
+            }
+
             var latestMetadata = await Updater.GetLatestVersion(
                 tool.Package,
                 currentVersion,

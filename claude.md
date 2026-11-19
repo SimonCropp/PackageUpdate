@@ -124,7 +124,7 @@ packageupdate --build
 
 - **ToolManifest.cs**: Parses a `dotnet-tools.json` manifest with `Utf8JsonReader`, capturing the byte range of each version value. Updates are spliced into the original bytes from the end of the file, so formatting is preserved exactly rather than being re-serialized
 
-- **PackageSourceReader.cs**: Reads NuGet sources from NuGet.config hierarchy using NuGet settings infrastructure
+- **PackageSourceReader.cs**: Reads NuGet sources, `minPublishAgeExceptions` and `packageSourceMapping` from the NuGet.config hierarchy using NuGet settings infrastructure
 
 - **ForkDetector.cs**: Detects forked git repos by checking for an "upstream" remote in `.git/config`. Skips forks found via recursive scanning; allows forks when explicitly targeted
 
@@ -245,6 +245,8 @@ Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common
 - Filters to only consider versions greater than current
 - Respects pre-release semantics (stable → stable, pre-release → any)
 - Queries all configured NuGet sources and selects highest version. Each source's candidates are newest first, so a source stops at the first candidate no newer than the best found so far, without fetching metadata for the rest
+- Respects [Package Source Mapping](https://learn.microsoft.com/nuget/consume-packages/package-source-mapping): when `packageSourceMapping` is enabled, `ConfiguredSources.For(package)` keeps only the sources `PackageSourceMapping.GetConfiguredPackageSources` maps the package to (source names matched case-insensitively), as restore does. This applies to central versions, `VersionOverride`, tools, the deprecation check and migration alternatives
+  - A package or tool mapped to no source (`ConfiguredSources.IsUnmapped`) is not looked up. `Updater.ReportIfUnmapped` logs a warning and adds a `NoMappedSource` problem, since restore cannot find it either
 - Skips unlisted packages
 - Respects the NuGet 8.0 [minimum package publish age](https://learn.microsoft.com/nuget/consume-packages/minimum-package-publish-age): the `minPublishAgeHours` attribute on a `packageSources` entry in nuget.config (set via `dotnet nuget add/update source --min-publish-age-hours`). Versions published more recently than that are skipped for that source
   - NuGet.Configuration reads the attribute onto `PackageSource.MinPublishAge` (zero when not set). A value that is not whole hours throws `NuGetConfigurationException` when settings load, which fails the solution or tool manifest as restore would. Do not parse the attribute by hand
@@ -279,7 +281,7 @@ src/
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
 │   ├── FileSystem.cs       # Solution and tool manifest discovery
 │   ├── PackageSourceReader.cs  # NuGet source config
-│   ├── ConfiguredSources.cs    # A directory's sources, and which packages skip their minimum age
+│   ├── ConfiguredSources.cs    # A directory's sources, which each package is mapped to, and which skip their minimum age
 │   └── ...
 ├── Tests/                  # Unit tests
 ├── Directory.Packages.props    # CPM configuration for this repo

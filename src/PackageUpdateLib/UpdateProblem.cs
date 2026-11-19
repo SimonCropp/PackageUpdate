@@ -54,5 +54,11 @@ public enum UpdateProblemKind
     /// A deprecated package whose alternative is in none of the sources, so its version was updated
     /// instead of it being migrated.
     /// </summary>
-    AlternativeNotFound
+    AlternativeNotFound,
+
+    /// <summary>
+    /// A package or tool that the nuget.config's packageSourceMapping maps to none of the sources, so it
+    /// was not updated. Restore cannot find it either.
+    /// </summary>
+    NoMappedSource
 }
