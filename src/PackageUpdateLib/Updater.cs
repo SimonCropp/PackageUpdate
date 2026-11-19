@@ -89,6 +89,11 @@
                 continue;
             }
 
+            if (ReportIfUnmapped(sources, package.Package!, directoryPackagesPropsPath, logger, result))
+            {
+                continue;
+            }
+
             // Check if current version is deprecated and attempt migration
             var currentMetadata = await GetPackageMetadata(
                 package.Package!,
@@ -491,6 +496,11 @@
                     continue;
                 }
 
+                if (ReportIfUnmapped(sources, packageOverride.Package!, csprojPath, logger, result))
+                {
+                    continue;
+                }
+
                 // An override follows the same rule as a central version: a stable override only moves
                 // to a newer stable, a pre-release override also considers pre-releases
                 var latestMetadata = await GetLatestVersion(
@@ -528,6 +538,32 @@
                 result.Add(change);
             }
         }
+    }
+
+    // Under packageSourceMapping, a package mapped to no source cannot be restored, so it is not looked
+    // up. Reported as a warning, rather than skipped silently, so the missing mapping can be fixed
+    internal static bool ReportIfUnmapped(
+        ConfiguredSources sources,
+        string package,
+        string file,
+        ILogger logger,
+        UpdateResult result)
+    {
+        if (!sources.IsUnmapped(package))
+        {
+            return false;
+        }
+
+        logger.LogWarning("Package {Package} is mapped to no package source by packageSourceMapping", package);
+        result.Add(
+            new UpdateProblem(
+                UpdateProblemKind.NoMappedSource,
+                file,
+                $"Package {package} is mapped to no package source by packageSourceMapping")
+            {
+                Package = package
+            });
+        return true;
     }
 
     // MSBuild treats booleans case-insensitively, so Pinned="True" pins as well as Pinned="true"

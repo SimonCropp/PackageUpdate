@@ -13,6 +13,10 @@ public static class PackageSourceReader
     // value that is not a whole number of hours by throwing NuGetConfigurationException. That
     // fails the solution or tool manifest, the same as restore would.
     // https://learn.microsoft.com/nuget/consume-packages/minimum-package-publish-age
+    //
+    // packageSourceMapping limits which sources a package is looked up in, as restore does, so a
+    // version is never taken from a source restore would not use, such as one with no minimum age.
+    // https://learn.microsoft.com/nuget/consume-packages/package-source-mapping
     internal static ConfiguredSources ReadConfigured(string directory)
     {
         var settings = Settings.LoadDefaultSettings(
@@ -25,7 +29,10 @@ public static class PackageSourceReader
             .Where(_ => _.IsEnabled)
             .ToList();
 
-        return new(sources, MinPublishAgeExceptions.GetMinPublishAgeExceptions(settings));
+        return new(
+            sources,
+            MinPublishAgeExceptions.GetMinPublishAgeExceptions(settings),
+            PackageSourceMapping.GetPackageSourceMapping(settings));
     }
 
     [Obsolete("Set PackageSource.MinPublishAge, which NuGet.Configuration now reads from nuget.config")]
