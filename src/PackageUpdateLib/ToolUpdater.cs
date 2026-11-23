@@ -67,6 +67,12 @@ public static class ToolUpdater
         var directory = Path.GetDirectoryName(manifestPath)!;
         var sources = PackageSourceReader.ReadConfigured(directory);
 
+        // Look the tools up ahead of the loop below, which goes through them in order, so their
+        // requests overlap rather than each waiting on the last
+        await using var prefetch = Prefetch.Start(
+            candidates,
+            _ => PrefetchTool(_, sources, cache, logger));
+
         var updates = new List<(ToolEntry Tool, NuGetVersion Version)>();
 
         // Added to the result once the file is written
@@ -122,5 +128,17 @@ public static class ToolUpdater
         {
             result.Add(change);
         }
+    }
+
+    // The lookup the loop in Update makes for a tool
+    static Task PrefetchTool(ToolEntry tool, ConfiguredSources sources, SourceCacheContext cache, ILogger logger)
+    {
+        if (!NuGetVersion.TryParse(tool.Version, out var currentVersion) ||
+            sources.IsUnmapped(tool.Package))
+        {
+            return Task.CompletedTask;
+        }
+
+        return Updater.GetLatestVersion(tool.Package, currentVersion, sources.For(tool.Package), cache, logger);
     }
 }

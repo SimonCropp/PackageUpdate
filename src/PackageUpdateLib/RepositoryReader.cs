@@ -1,19 +1,18 @@
 ﻿public static class RepositoryReader
 {
-    static ConcurrentDictionary<PackageSource, (SourceRepository, PackageMetadataResource)> cache = [];
+    // Shared, since lookups for many packages start at once and each needs its source's repository
+    static ConcurrentDictionary<PackageSource, Lazy<Task<(SourceRepository, PackageMetadataResource)>>> cache = [];
     static Repository.RepositoryFactory factory = Repository.Factory;
 
-    public static async Task<(SourceRepository repository, PackageMetadataResource metadataResource)> Read(PackageSource source)
+    public static Task<(SourceRepository repository, PackageMetadataResource metadataResource)> Read(PackageSource source) =>
+        cache.GetOrStart(source, () => Create(source));
+
+    static async Task<(SourceRepository, PackageMetadataResource)> Create(PackageSource source)
     {
-        if (!cache.TryGetValue(source, out var value))
-        {
-            var repository = factory.GetCoreV3(source);
+        var repository = factory.GetCoreV3(source);
 
-            var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>() ??
-                                   throw new($"Could not resolve a {nameof(PackageMetadataResource)} for source {source.Source}");
-            cache[source] = value = (repository, metadataResource);
-        }
-
-        return value;
+        var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>() ??
+                               throw new($"Could not resolve a {nameof(PackageMetadataResource)} for source {source.Source}");
+        return (repository, metadataResource);
     }
 }

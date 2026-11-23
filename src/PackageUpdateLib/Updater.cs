@@ -70,6 +70,12 @@
 
         var sources = PackageSourceReader.ReadConfigured(directory);
 
+        // Look the packages up ahead of the loop below, which goes through them in order, so their
+        // requests overlap rather than each waiting on the last
+        await using var prefetch = Prefetch.Start(
+            packageVersions,
+            _ => PrefetchPackage(_.Package!, _.CurrentVersion!, sources, cache, logger));
+
         // Added to the result once the file is saved
         var changes = new List<PackageChange>();
 
@@ -178,25 +184,59 @@
         await UpdateVersionOverrides(directory, packageName, sources, cache, logger, result);
     }
 
+    // The lookups the loop in Update makes for a package: the metadata of its current version, for
+    // the deprecation check, the alternative it would migrate to, and its latest version
+    static async Task PrefetchPackage(string package, string version, ConfiguredSources sources, SourceCacheContext cache, ILogger logger)
+    {
+        if (!NuGetVersion.TryParse(version, out var currentVersion) ||
+            sources.IsUnmapped(package))
+        {
+            return;
+        }
+
+        var packageSources = sources.For(package);
+        var currentMetadata = await GetPackageMetadata(package, currentVersion, packageSources, cache, logger);
+        if (currentMetadata != null)
+        {
+            var deprecation = await currentMetadata.GetDeprecationMetadataAsync();
+            var alternative = deprecation?.AlternatePackage?.PackageId;
+            if (alternative != null)
+            {
+                await GetLatestVersion(alternative, anyVersion, sources.For(alternative), cache, logger);
+            }
+        }
+
+        await GetLatestVersion(package, currentVersion, packageSources, cache, logger);
+    }
+
+    // Where a migration's alternative is looked up from, so any version of it is newer
+    static NuGetVersion anyVersion = new(0, 0, 0);
+
     /// <summary>
     /// The latest version to move to from the current version, or null when there is none.
-    /// The result is reused for the life of the cache, for the same sources.
+    /// The result is reused for the life of the cache, for the same sources, and a lookup still in
+    /// progress is shared with every caller that asks for the same one.
     /// </summary>
-    public static async Task<IPackageSearchMetadata?> GetLatestVersion(
+    public static Task<IPackageSearchMetadata?> GetLatestVersion(
         string package,
         NuGetVersion currentVersion,
         List<PackageSource> sources,
         SourceCacheContext cache,
         ILogger? logger = null)
     {
-        logger ??= NullLogger.Instance;
-        var latestVersionCache = LookupCache.For(cache, sources).Latest;
-        var key = (package, currentVersion);
-        if (latestVersionCache.TryGetValue(key, out var cached))
-        {
-            return cached;
-        }
+        var resolvedLogger = logger ?? NullLogger.Instance;
+        return LookupCache.For(cache, sources).Latest.GetOrStart(
+            (package, currentVersion),
+            () => FindLatestVersion(package, currentVersion, sources, cache, resolvedLogger));
+    }
 
+    static async Task<IPackageSearchMetadata?> FindLatestVersion(
+        string package,
+        NuGetVersion currentVersion,
+        List<PackageSource> sources,
+        SourceCacheContext cache,
+        ILogger logger)
+    {
         IPackageSearchMetadata? latestMetadata = null;
 
         foreach (var source in sources)
@@ -246,7 +286,6 @@
             }
         }
 
-        latestVersionCache[key] = latestMetadata;
         return latestMetadata;
     }
 
@@ -273,20 +312,24 @@
         return null;
     }
 
-    static async Task<IPackageSearchMetadata?> GetPackageMetadata(
+    static Task<IPackageSearchMetadata?> GetPackageMetadata(
+        string package,
+        NuGetVersion version,
+        List<PackageSource> sources,
+        SourceCacheContext cache,
+        ILogger logger) =>
+        LookupCache.For(cache, sources).Metadata.GetOrStart(
+            (package, version),
+            () => FindPackageMetadata(package, version, sources, cache, logger));
+
+    // From the first source that has it
+    static async Task<IPackageSearchMetadata?> FindPackageMetadata(
         string package,
         NuGetVersion version,
         List<PackageSource> sources,
         SourceCacheContext cache,
         ILogger logger)
     {
-        var metadataCache = LookupCache.For(cache, sources).Metadata;
-        var key = (package, version);
-        if (metadataCache.TryGetValue(key, out var cached))
-        {
-            return cached;
-        }
-
         foreach (var source in sources)
         {
             var (_, metadataResource) = await RepositoryReader.Read(source);
@@ -299,12 +342,10 @@
 
             if (metadata != null)
             {
-                metadataCache[key] = metadata;
                 return metadata;
             }
         }
 
-        metadataCache[key] = null;
         return null;
     }
 
@@ -369,8 +410,7 @@
         // Verify alternate package exists in NuGet sources
         var alternateMetadata = await GetLatestVersion(
             alternateId,
-            // Start from 0.0.0 to get any version
-            new(0, 0, 0),
+            anyVersion,
             sources.For(alternateId),
             cache,
             logger);
@@ -462,6 +502,12 @@
         ILogger logger,
         UpdateResult result)
     {
+        // Look the overrides in every csproj up ahead of the loop below, since most csproj files
+        // have only one or two
+        await using var prefetch = Prefetch.Start(
+            OverridesToPrefetch(directory, packageName, sources),
+            _ => GetLatestVersion(_.Package, _.Version, sources.For(_.Package), cache, logger));
+
         foreach (var csprojPath in EnumerateCsprojFiles(directory))
         {
             var editor = XmlEditor.Load(csprojPath);
@@ -469,24 +515,10 @@
             // Added to the result once the file is saved
             var changes = new List<PackageChange>();
 
-            var overrides = editor.Document.Descendants("PackageReference")
-                .Select(element => new
-                {
-                    Element = element,
-                    Package = element.Attribute("Include")?.Value,
-                    CurrentOverride = element.Attribute("VersionOverride")?.Value,
-                    Pinned = IsPinned(element)
-                })
-                .Where(_ => _.Package != null &&
-                            _.CurrentOverride != null &&
-                            !_.Pinned)
-                .ToList();
-
-            foreach (var packageOverride in overrides)
+            foreach (var packageOverride in ReadOverrides(editor.Document))
             {
                 // Filter to specific package if requested
-                if (!string.IsNullOrEmpty(packageName) &&
-                    !string.Equals(packageOverride.Package, packageName, StringComparison.OrdinalIgnoreCase))
+                if (!IsSelected(packageOverride.Package, packageName))
                 {
                     continue;
                 }
@@ -496,7 +528,7 @@
                     continue;
                 }
 
-                if (ReportIfUnmapped(sources, packageOverride.Package!, csprojPath, logger, result))
+                if (ReportIfUnmapped(sources, packageOverride.Package, csprojPath, logger, result))
                 {
                     continue;
                 }
@@ -504,9 +536,9 @@
                 // An override follows the same rule as a central version: a stable override only moves
                 // to a newer stable, a pre-release override also considers pre-releases
                 var latestMetadata = await GetLatestVersion(
-                    packageOverride.Package!,
+                    packageOverride.Package,
                     currentVersion,
-                    sources.For(packageOverride.Package!),
+                    sources.For(packageOverride.Package),
                     cache,
                     logger);
 
@@ -529,7 +561,7 @@
                     currentVersion,
                     latestVersion,
                     Path.GetFileName(csprojPath));
-                changes.Add(new(PackageChangeKind.VersionOverride, csprojPath, packageOverride.Package!, currentVersion, latestVersion));
+                changes.Add(new(PackageChangeKind.VersionOverride, csprojPath, packageOverride.Package, currentVersion, latestVersion));
             }
 
             await editor.Save(csprojPath);
@@ -539,6 +571,58 @@
             }
         }
     }
+
+    // The PackageReferences with a VersionOverride that is not pinned
+    static List<(XElement Element, string Package, string CurrentOverride)> ReadOverrides(XDocument document)
+    {
+        var overrides = new List<(XElement Element, string Package, string CurrentOverride)>();
+        foreach (var element in document.Descendants("PackageReference"))
+        {
+            var package = element.Attribute("Include")?.Value;
+            var currentOverride = element.Attribute("VersionOverride")?.Value;
+            if (package != null &&
+                currentOverride != null &&
+                !IsPinned(element))
+            {
+                overrides.Add((element, package, currentOverride));
+            }
+        }
+
+        return overrides;
+    }
+
+    // The VersionOverrides the loop in UpdateVersionOverrides looks up, read ahead of it. A csproj
+    // that cannot be read is left out, for the loop to fail on in order
+    static IEnumerable<(string Package, NuGetVersion Version)> OverridesToPrefetch(string directory, string? packageName, ConfiguredSources sources)
+    {
+        foreach (var csprojPath in EnumerateCsprojFiles(directory))
+        {
+            List<(XElement Element, string Package, string CurrentOverride)> overrides;
+            try
+            {
+                overrides = ReadOverrides(XmlEditor.Load(csprojPath).Document);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var (_, package, currentOverride) in overrides)
+            {
+                if (IsSelected(package, packageName) &&
+                    NuGetVersion.TryParse(currentOverride, out var version) &&
+                    !sources.IsUnmapped(package))
+                {
+                    yield return (package, version);
+                }
+            }
+        }
+    }
+
+    // When --package is given, only that package is updated
+    static bool IsSelected(string package, string? packageName) =>
+        string.IsNullOrEmpty(packageName) ||
+        string.Equals(package, packageName, StringComparison.OrdinalIgnoreCase);
 
     // Under packageSourceMapping, a package mapped to no source cannot be restored, so it is not looked
     // up. Reported as a warning, rather than skipped silently, so the missing mapping can be fixed

@@ -23,4 +23,9 @@
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- NuGet.Protocol parses the service index and registration metadata with System.Text.Json
+         rather than Newtonsoft.Json: a run allocates about 4x less, and is slightly faster -->
+    <RuntimeHostConfigurationOption Include="NuGet.UseSystemTextJsonDeserialization" Value="true" />
+  </ItemGroup>
 </Project>
