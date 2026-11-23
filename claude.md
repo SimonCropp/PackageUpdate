@@ -138,6 +138,11 @@ packageupdate --build
 
 - **CommandRunner.cs**: CLI argument parsing using CommandLineParser library
 
+- **PackageUpdate.csproj**: Turns on NuGet.Protocol's `NuGet.UseSystemTextJsonDeserialization` switch, as a `RuntimeHostConfigurationOption` so it lands in the tool's runtimeconfig.json. NuGet.Protocol then parses the service index and registration metadata with System.Text.Json rather than Newtonsoft.Json, allocating about 4x less
+  - It applies only to the tool. PackageUpdateLib does not set it, so a caller such as Lode stays on NuGet's default unless it opts in itself
+  - Newtonsoft.Json is still a dependency, via NuGet.Packaging, and NuGet.Protocol still uses it elsewhere
+  - Tests run on NuGet's default. Set `NUGET_USE_SYSTEM_TEXT_JSON_DESERIALIZATION=true` to run them on the path the tool takes
+
 ### Testing
 
 Tests use:
