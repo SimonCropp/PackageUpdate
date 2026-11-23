@@ -253,6 +253,11 @@ Package WindowsAzure.Storage is deprecated with alternative Azure.Storage.Common
   - `minPublishAgeExceptions` (read via `MinPublishAgeExceptions.GetMinPublishAgeExceptions`) exempts matching packages on every source. `PackageSourceReader.ReadConfigured` returns a `ConfiguredSources`, whose `For(package)` gives the sources to look a package up in: clones with no minimum age when the package is exempt. Internal callers look packages up via `For`, not the raw list
   - Under a nonzero minimum age, a version with no publish date is skipped (NuGet errors instead). See `Updater.CooldownSkipReason`
 - Lookups are cached in `LookupCache` for the life of the `SourceCacheContext`, so each `PackageUpdater.Run` (which makes its own) sees newly published versions, and a long lived caller such as Lode does not get stale results. Within that, they are kept apart per set of sources (each source's url and `MinPublishAge`), since solutions under one directory can each have their own nuget.config. Never cache lookups in a static keyed only by package and version
+  - Each entry is the lookup task itself, shared via `SharedLookup.GetOrStart`, so a lookup still in progress is awaited rather than made again. A failed lookup is removed, so a later call tries again
+- Lookups are made ahead of time via `Prefetch`: before the loops over central packages, VersionOverrides (across every csproj) and tools, a bounded `Parallel.ForEachAsync` (`Prefetch.MaxConcurrentLookups`) starts each item's lookups, so their requests overlap. The loops are unchanged and go through the items in order, awaiting the shared lookups, so edits, migrations, logged changes, the result and progress stay in the same order as without it
+  - A prefetch only looks up. It never logs a change, adds to the `UpdateResult` or edits a file; keep that in the loop. A failure in it is swallowed, for the loop to meet in order
+  - Disposing it (`await using`) stops it starting lookups and waits for those started, so none outlive the `SourceCacheContext`
+  - Loggers passed in must be thread-safe, since lookups (and NuGet.Protocol's own logging) run concurrently
 
 ### File Format Preservation
 
@@ -277,6 +282,8 @@ src/
 │   ├── NuGetLogger.cs      # Forwards NuGet.Protocol logging to that ILogger
 │   ├── Updater.cs          # Core update logic
 │   ├── LookupCache.cs      # Version lookups, cached per SourceCacheContext and set of sources
+│   ├── SharedLookup.cs     # Shares a lookup in progress between callers, without keeping failures
+│   ├── Prefetch.cs         # Starts lookups concurrently ahead of a loop that applies them in order
 │   ├── ToolUpdater.cs      # dotnet-tools.json update logic
 │   ├── ToolManifest.cs     # dotnet-tools.json parsing and formatting preserving writes
 │   ├── FileSystem.cs       # Solution and tool manifest discovery

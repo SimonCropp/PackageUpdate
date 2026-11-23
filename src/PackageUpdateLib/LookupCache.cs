@@ -3,16 +3,18 @@
 /// was looked up with, so each <see cref="PackageUpdater"/> run sees versions published since the last.
 /// Kept apart per set of sources, since solutions under one directory can each have their own
 /// nuget.config, with different feeds or minPublishAgeHours.
+/// Each is the lookup itself, shared via <see cref="SharedLookup"/>, so one still in progress is
+/// awaited rather than made again.
 /// </summary>
 class LookupCache
 {
     static ConditionalWeakTable<SourceCacheContext, ConcurrentDictionary<string, LookupCache>> caches = new();
 
     /// <summary>The metadata of a version, from the first source that has it.</summary>
-    public ConcurrentDictionary<(string Package, NuGetVersion Version), IPackageSearchMetadata?> Metadata { get; } = new(PackageCacheKeyComparer.Instance);
+    public ConcurrentDictionary<(string Package, NuGetVersion Version), Lazy<Task<IPackageSearchMetadata?>>> Metadata { get; } = new(PackageCacheKeyComparer.Instance);
 
     /// <summary>The latest version to move to from a current version.</summary>
-    public ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), IPackageSearchMetadata?> Latest { get; } = new(PackageCacheKeyComparer.Instance);
+    public ConcurrentDictionary<(string Package, NuGetVersion CurrentVersion), Lazy<Task<IPackageSearchMetadata?>>> Latest { get; } = new(PackageCacheKeyComparer.Instance);
 
     public static LookupCache For(SourceCacheContext context, List<PackageSource> sources)
     {
