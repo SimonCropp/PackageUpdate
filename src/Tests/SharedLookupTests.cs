@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 public class SharedLookupTests
 {
     [Test]

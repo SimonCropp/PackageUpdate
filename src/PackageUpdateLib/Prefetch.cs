@@ -10,7 +10,7 @@ sealed class Prefetch : IAsyncDisposable
     // Enough for the requests to overlap, without flooding a private feed
     internal const int MaxConcurrentLookups = 16;
 
-    CancellationTokenSource cancel = new();
+    CancelSource cancel = new();
     Task running = Task.CompletedTask;
 
     public static Prefetch Start<T>(IEnumerable<T> items, Func<T, Task> lookup)
